@@ -1,0 +1,21 @@
+[Unit]
+Description=OpenClaw VM Auto-Update Timer
+Documentation=https://github.com/nyldn/openclawd-config
+Requires=openclaw-auto-update.service
+
+[Timer]
+# Run daily at 3:00 AM
+OnCalendar=daily
+# If the system was powered off, run on next boot
+Persistent=true
+# Add random delay to avoid thundering herd
+RandomizedDelaySec=1800
+# Set time for daily run
+OnCalendar=*-*-* 03:00:00
+
+# When to run relative to system boot
+OnBootSec=15min
+OnUnitActiveSec=1d
+
+[Install]
+WantedBy=timers.target

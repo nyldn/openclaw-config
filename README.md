@@ -42,6 +42,7 @@ cd openclawd-config/bootstrap
 - **Node.js 20+** with npm
 - **System utilities** - git, curl, jq, etc.
 - **Memory system** - SQLite-based persistence
+- **Auto-updates** - Daily automated updates for all components
 
 ### MCP Servers (6 Total)
 - Google Drive - File operations and sharing
@@ -76,7 +77,8 @@ openclawd-config/
 │   │   ├── 07-openclaw-env.sh
 │   │   ├── 08-memory-init.sh
 │   │   ├── 09-claude-octopus.sh
-│   │   └── 10-deployment-tools.sh
+│   │   ├── 10-deployment-tools.sh
+│   │   └── 11-auto-updates.sh
 │   └── lib/                    # Shared utilities
 │       ├── logger.sh
 │       ├── validation.sh
@@ -103,6 +105,14 @@ openclawd-config/
 - Incremental updates (only install what's changed)
 - Dependency management between modules
 - Rollback support for failed installations
+
+### Automated Maintenance
+- **Daily auto-updates** for all components
+- System packages, Python packages, Node.js packages
+- CLI tools (Vercel, Netlify, Supabase)
+- MCP servers and repository updates
+- Automatic cleanup of unused packages
+- Daily update reports and logs
 
 ### Comprehensive Validation
 - Post-installation health checks
@@ -180,9 +190,29 @@ openclawd-config/
    ./bootstrap.sh --validate
    ```
 
+5. **Auto-Updates** (Configured Automatically)
+
+   Daily updates are configured to run at 3:00 AM:
+   ```bash
+   # Check update timer status
+   systemctl --user status openclaw-auto-update.timer
+
+   # View last update
+   journalctl --user -u openclaw-auto-update.service
+
+   # View today's update report
+   cat /var/log/openclaw/update-report-$(date +%Y%m%d).txt
+
+   # Run update manually now
+   systemctl --user start openclaw-auto-update.service
+   ```
+
+   See [AUTO_UPDATE_GUIDE.md](bootstrap/AUTO_UPDATE_GUIDE.md) for full documentation.
+
 ## 📚 Documentation
 
 - **Bootstrap System**: [bootstrap/README.md](bootstrap/README.md)
+- **Auto-Update Guide**: [bootstrap/AUTO_UPDATE_GUIDE.md](bootstrap/AUTO_UPDATE_GUIDE.md)
 - **Quick Start Guide**: [deployment-tools/docs/QUICK-START.md](deployment-tools/docs/QUICK-START.md)
 - **Setup Plan**: [deployment-tools/docs/openclaw-setup-plan.md](deployment-tools/docs/openclaw-setup-plan.md)
 - **Workflow Results**: [deployment-tools/docs/EMBRACE-WORKFLOW-RESULTS.md](deployment-tools/docs/EMBRACE-WORKFLOW-RESULTS.md)
@@ -301,6 +331,14 @@ project-share              # Share project files
 - **Bootstrap Docs**: [bootstrap/README.md](bootstrap/README.md)
 
 ## 📅 Changelog
+
+### v1.2.0 (2026-02-01)
+- Added auto-update system (module 11)
+- Daily automated updates for all components
+- Systemd timer for scheduled updates
+- Update reports and comprehensive logging
+- Repository auto-update from GitHub
+- Package cleanup and maintenance
 
 ### v1.1.0 (2026-02-01)
 - Added deployment tools module

@@ -62,6 +62,14 @@ cd openclawd-config/bootstrap
 - **Extended MCP Servers**: GitHub, Filesystem, PostgreSQL, Brave Search
 - **Shell Aliases**: 28+ deployment and sync shortcuts
 
+### Automated Maintenance
+- **Daily Auto-Updates**: Systemd timer-based updates
+- **System Packages**: APT/YUM/DNF updates
+- **Python/Node Packages**: Keep dependencies current
+- **CLI Tools**: Update Vercel, Netlify, Supabase
+- **Repository Updates**: Auto-pull from GitHub
+- **Cleanup**: Remove unused packages and caches
+
 ### OpenClaw Workspace
 
 Creates `~/openclaw-workspace/` with GOTCHA structure:
@@ -476,6 +484,15 @@ To add new modules or improve existing ones:
 - Documentation: https://github.com/nyldn/openclawd-config/wiki
 
 ## Changelog
+
+### v1.2.0 (2026-02-01)
+
+- Added auto-update system (11-auto-updates.sh)
+- Daily automated updates via systemd timer
+- Updates for system, Python, Node.js, CLI tools
+- Repository auto-sync from GitHub
+- Comprehensive update logging and reports
+- Package cleanup and maintenance automation
 
 ### v1.1.0 (2026-02-01)
 

@@ -1,0 +1,42 @@
+[Unit]
+Description=OpenClaw VM Auto-Update Service
+Documentation=https://github.com/nyldn/openclawd-config
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=%u
+Group=%u
+WorkingDirectory=%h
+
+# Environment
+Environment="LOG_DIR=/var/log/openclaw"
+Environment="VENV_DIR=%h/.local/venv/openclaw"
+Environment="NPM_GLOBAL_DIR=%h/.local/npm-global"
+Environment="PATH=%h/.local/bin:%h/.local/npm-global/bin:/usr/local/bin:/usr/bin:/bin"
+
+# Execute update script
+ExecStart=%h/openclawd-config/bootstrap/scripts/auto-update.sh
+
+# Timeout
+TimeoutStartSec=600
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=openclaw-auto-update
+
+# Security
+PrivateTmp=yes
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/var/log/openclaw %h/openclawd-config %h/.local %h/.config %h/.cache
+
+# Restart on failure
+Restart=on-failure
+RestartSec=60
+
+[Install]
+WantedBy=default.target
