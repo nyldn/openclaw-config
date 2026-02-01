@@ -1,0 +1,48 @@
+{
+  "mcpServers": {
+    "google-drive": {
+      "command": "node",
+      "args": ["/app/mcp-servers/google-drive-mcp.js"],
+      "env": {
+        "GOOGLE_APPLICATION_CREDENTIALS": "/app/data/mcp/google-drive-credentials.json"
+      }
+    },
+    "dropbox": {
+      "command": "node",
+      "args": ["/app/mcp-servers/dropbox-mcp.js"],
+      "env": {
+        "DROPBOX_ACCESS_TOKEN": "${DROPBOX_ACCESS_TOKEN}"
+      }
+    },
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_PAT}"
+      }
+    },
+    "filesystem": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "/app/data/workspace",
+        "/app/data/projects"
+      ]
+    },
+    "postgres": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-postgres"],
+      "env": {
+        "POSTGRES_CONNECTION_STRING": "${SUPABASE_DB_URL}"
+      }
+    },
+    "brave-search": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-brave-search"],
+      "env": {
+        "BRAVE_API_KEY": "${BRAVE_API_KEY}"
+      }
+    }
+  }
+}

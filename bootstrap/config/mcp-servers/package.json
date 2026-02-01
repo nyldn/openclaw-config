@@ -1,0 +1,11 @@
+{
+  "name": "openclaw-mcp-servers",
+  "version": "1.0.0",
+  "description": "MCP Servers for OpenClaw VM",
+  "type": "module",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^0.6.0",
+    "googleapis": "^144.0.0",
+    "dropbox": "^10.34.0"
+  }
+}

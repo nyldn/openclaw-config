@@ -1,0 +1,49 @@
+# OpenClaw Memory System
+
+This file serves as the primary memory store for the OpenClaw framework.
+
+## About This System
+
+The memory system provides persistent context across sessions using:
+- **SQLite Database**: Structured storage in `data/memory.db`
+- **Daily Logs**: Time-stamped entries in `memory/logs/YYYY-MM-DD.md`
+- **Semantic Search**: Vector embeddings for context retrieval
+- **Hybrid Search**: Combined keyword + semantic search
+
+## Usage
+
+### Writing to Memory
+```bash
+python tools/memory/memory_write.py --content "Your memory entry" --type fact
+```
+
+### Reading from Memory
+```bash
+python tools/memory/memory_read.py --format markdown
+```
+
+### Searching Memory
+```bash
+python tools/memory/hybrid_search.py --query "your search query"
+```
+
+## Memory Types
+
+- **fact**: Permanent knowledge or information
+- **event**: Time-bound occurrence or action
+- **decision**: Important choices made during development
+- **context**: Background information or project state
+
+## Initial Setup Complete
+
+- Bootstrap installation completed: {{ TIMESTAMP }}
+- Memory system initialized
+- Database created at `data/memory.db`
+- Ready for use
+
+## Next Steps
+
+1. Configure API keys in `.env` file
+2. Test memory write: `python tools/memory/memory_write.py --content "Test entry" --type event`
+3. Test memory read: `python tools/memory/memory_read.py`
+4. Begin your OpenClaw session

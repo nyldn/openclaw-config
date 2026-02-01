@@ -1,0 +1,78 @@
+version: "1.0.0"
+updated_at: "2026-02-01T00:00:00Z"
+
+modules:
+  system-deps:
+    version: "1.0.0"
+    required: true
+    description: "Base system packages and dependencies"
+
+  python:
+    version: "1.0.0"
+    required: true
+    description: "Python 3.9+ runtime and package management"
+
+  nodejs:
+    version: "1.0.0"
+    required: true
+    description: "Node.js 20+ runtime and npm"
+
+  claude-cli:
+    version: "1.0.0"
+    required: false
+    description: "Claude Code CLI and Anthropic SDK"
+
+  codex-cli:
+    version: "1.0.0"
+    required: false
+    description: "OpenAI CLI and Python SDK"
+
+  gemini-cli:
+    version: "1.0.0"
+    required: false
+    description: "Google Gemini CLI and SDK"
+
+  openclaw-env:
+    version: "1.0.0"
+    required: true
+    description: "GOTCHA framework directory structure"
+
+  memory-init:
+    version: "1.0.0"
+    required: true
+    description: "Memory system initialization"
+
+  claude-octopus:
+    version: "1.0.0"
+    required: false
+    description: "Claude Octopus plugin for advanced AI personas and workflows"
+
+packages:
+  system:
+    apt:
+      - curl
+      - git
+      - build-essential
+      - sqlite3
+      - python3-dev
+      - libssl-dev
+      - ca-certificates
+      - gnupg
+      - lsb-release
+
+  python:
+    - openai>=1.0.0
+    - anthropic>=0.25.0
+    - google-generativeai>=0.3.0
+    - rank-bm25>=0.2.2
+    - pyyaml>=6.0
+    - python-dotenv>=1.0.0
+
+  node:
+    global:
+      - "@anthropic-ai/sdk"
+
+environment:
+  workspace_dir: "~/openclaw-workspace"
+  venv_dir: "~/.local/venv/openclaw"
+  npm_global_prefix: "~/.local/npm-global"

@@ -1,0 +1,64 @@
+claude:
+  cli:
+    name: "claude"
+    install_method: "npm"
+    package: "@anthropic-ai/claude-cli"
+    config_dir: "~/.config/claude"
+    auth_command: "claude login"
+    test_command: "claude --version"
+
+  sdk:
+    language: "python"
+    package: "anthropic"
+    min_version: "0.25.0"
+    import_name: "anthropic"
+    env_var: "ANTHROPIC_API_KEY"
+
+openai:
+  cli:
+    name: "openai"
+    install_method: "npm"
+    package: "openai-cli"
+    config_dir: "~/.config/openai"
+    auth_command: "openai auth login"
+    test_command: "openai --version"
+
+  sdk:
+    language: "python"
+    package: "openai"
+    min_version: "1.0.0"
+    import_name: "openai"
+    env_var: "OPENAI_API_KEY"
+
+gemini:
+  cli:
+    name: "gemini"
+    install_method: "npm"
+    package: "@google/generative-ai-cli"
+    config_dir: "~/.config/gemini"
+    auth_command: "gemini auth login"
+    test_command: "gemini --version"
+    fallback: "Use gcloud CLI integration if npm package unavailable"
+
+  sdk:
+    language: "python"
+    package: "google-generativeai"
+    min_version: "0.3.0"
+    import_name: "google.generativeai"
+    env_var: "GOOGLE_API_KEY"
+
+memory_system:
+  database: "sqlite3"
+  db_path: "data/memory.db"
+  tools_dir: "tools/memory"
+  memory_dir: "memory"
+  logs_dir: "memory/logs"
+
+  required_files:
+    - tools/memory/__init__.py
+    - tools/memory/memory_db.py
+    - tools/memory/memory_read.py
+    - tools/memory/memory_write.py
+    - tools/memory/semantic_search.py
+    - tools/memory/hybrid_search.py
+    - tools/memory/embed_memory.py

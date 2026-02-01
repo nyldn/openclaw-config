@@ -1,0 +1,114 @@
+# OS Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Editor Files
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+*.sublime-*
+
+# Logs
+*.log
+logs/
+*.log.*
+bootstrap/logs/
+
+# Temporary Files
+*.tmp
+.tmp/
+temp/
+tmp/
+
+# Environment Files
+.env
+.env.local
+.env.*.local
+*.env
+
+# Credentials & Secrets
+*credentials*.json
+*token*.json
+*.key
+*.pem
+*.p12
+secrets/
+.secrets/
+
+# API Keys (be extra safe)
+*api*key*
+*API*KEY*
+*secret*
+*SECRET*
+
+# Build & Distribution
+dist/
+build/
+*.egg-info/
+__pycache__/
+*.pyc
+*.pyo
+node_modules/
+.npm/
+package-lock.json
+yarn.lock
+
+# Virtual Environments
+venv/
+env/
+ENV/
+.venv/
+*.venv
+
+# State Files
+*.state
+state.json
+bootstrap-state.yaml
+.openclaw/
+
+# Database Files
+*.db
+*.sqlite
+*.sqlite3
+data/*.db
+
+# Cache
+.cache/
+*.cache
+.pytest_cache/
+.mypy_cache/
+
+# Coverage
+.coverage
+htmlcov/
+coverage.xml
+
+# Claude Octopus
+.claude-octopus/state.json
+.claude-octopus/results/*.md
+!.claude-octopus/results/README.md
+
+# Runtime Files
+*.pid
+*.sock
+
+# Backup Files
+*.backup
+*.bak
+*~
+
+# Project-Specific
+openclaw-workspace/
+memory/
+data/
+.local/
+
+# Keep Directory Structure
+!.gitkeep

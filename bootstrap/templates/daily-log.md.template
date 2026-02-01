@@ -1,0 +1,23 @@
+# Daily Log: {{ DATE }}
+
+## Session Summary
+
+**Date**: {{ DATE }}
+**Started**: {{ TIME }}
+
+## Activities
+
+- Session initialized
+
+## Decisions Made
+
+(No decisions recorded yet)
+
+## Context Notes
+
+(Add context as needed)
+
+## Next Steps
+
+- Continue development work
+- Record important events and decisions
