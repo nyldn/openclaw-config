@@ -246,7 +246,6 @@ get_module_description() {
         deployment-tools) echo "Vercel, Netlify, Supabase CLIs" ;;
         dev-tools) echo "Development utilities and tools" ;;
         auto-updates) echo "Automated daily updates" ;;
-        rclone) echo "Cloud storage sync (50+ backends)" ;;
         security) echo "SSH hardening, firewall, fail2ban" ;;
         openclaw) echo "OpenClaw AI assistant (optional)" ;;
         productivity-tools) echo "Calendar, Email, Tasks, Slack integration" ;;
@@ -274,7 +273,7 @@ get_preset_modules() {
             echo "system-deps python nodejs claude-cli codex-cli gemini-cli dev-tools memory-init"
             ;;
         full)
-            echo "system-deps python nodejs claude-cli codex-cli gemini-cli openclaw-env memory-init claude-octopus deployment-tools dev-tools auto-updates rclone security productivity-tools"
+            echo "system-deps python nodejs claude-cli codex-cli gemini-cli openclaw-env memory-init claude-octopus deployment-tools dev-tools auto-updates security productivity-tools"
             ;;
         *)
             echo ""
@@ -434,7 +433,6 @@ get_module_dependencies() {
         deployment-tools) echo "system-deps nodejs" ;;
         dev-tools) echo "system-deps" ;;
         auto-updates) echo "system-deps" ;;
-        rclone) echo "system-deps" ;;
         security) echo "system-deps" ;;
         openclaw) echo "system-deps python nodejs openclaw-env" ;;
         productivity-tools) echo "system-deps nodejs deployment-tools" ;;
@@ -467,7 +465,6 @@ get_module_size() {
         deployment-tools) echo "~300MB" ;;
         dev-tools) echo "~50MB" ;;
         auto-updates) echo "~5MB" ;;
-        rclone) echo "~40MB" ;;
         security) echo "~30MB" ;;
         openclaw) echo "~500MB" ;;
         productivity-tools) echo "~100MB" ;;

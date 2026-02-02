@@ -112,7 +112,7 @@ log_success() {
     local message="$1"
     local sanitized
     sanitized=$(log_sanitize "$message")
-    echo -e "${COLOR_GREEN}[${SYMBOL_SUCCESS}]${COLOR_RESET} $sanitized"
+    echo -e "${COLOR_GREEN}[${SYMBOL_SUCCESS}]${COLOR_RESET} $sanitized" >&2
     _log_to_file "SUCCESS" "$message"
 }
 
@@ -132,7 +132,7 @@ log_warn() {
     local message="$1"
     local sanitized
     sanitized=$(log_sanitize "$message")
-    echo -e "${COLOR_YELLOW}[${SYMBOL_WARNING}]${COLOR_RESET} $sanitized"
+    echo -e "${COLOR_YELLOW}[${SYMBOL_WARNING}]${COLOR_RESET} $sanitized" >&2
     _log_to_file "WARN" "$message"
 }
 
@@ -142,7 +142,7 @@ log_info() {
     local message="$1"
     local sanitized
     sanitized=$(log_sanitize "$message")
-    echo -e "${COLOR_BLUE}[${SYMBOL_INFO}]${COLOR_RESET} $sanitized"
+    echo -e "${COLOR_BLUE}[${SYMBOL_INFO}]${COLOR_RESET} $sanitized" >&2
     _log_to_file "INFO" "$message"
 }
 
@@ -152,7 +152,7 @@ log_progress() {
     local message="$1"
     local sanitized
     sanitized=$(log_sanitize "$message")
-    echo -e "${COLOR_CYAN}[${SYMBOL_PROGRESS}]${COLOR_RESET} $sanitized"
+    echo -e "${COLOR_CYAN}[${SYMBOL_PROGRESS}]${COLOR_RESET} $sanitized" >&2
     _log_to_file "PROGRESS" "$message"
 }
 
@@ -163,7 +163,7 @@ log_debug() {
     _log_to_file "DEBUG" "$message"
 
     if [[ "$VERBOSE" == "true" ]]; then
-        echo -e "${COLOR_GRAY}[DEBUG]${COLOR_RESET} $message"
+        echo -e "${COLOR_GRAY}[DEBUG]${COLOR_RESET} $message" >&2
     fi
 }
 
@@ -179,11 +179,11 @@ log_cmd() {
 # Usage: log_section "Section Title"
 log_section() {
     local title="$1"
-    echo ""
-    echo -e "${COLOR_CYAN}═══════════════════════════════════════════════════════${COLOR_RESET}"
-    echo -e "${COLOR_CYAN}  $title${COLOR_RESET}"
-    echo -e "${COLOR_CYAN}═══════════════════════════════════════════════════════${COLOR_RESET}"
-    echo ""
+    echo "" >&2
+    echo -e "${COLOR_CYAN}═══════════════════════════════════════════════════════${COLOR_RESET}" >&2
+    echo -e "${COLOR_CYAN}  $title${COLOR_RESET}" >&2
+    echo -e "${COLOR_CYAN}═══════════════════════════════════════════════════════${COLOR_RESET}" >&2
+    echo "" >&2
     _log_to_file "SECTION" "$title"
 }
 
@@ -197,13 +197,13 @@ log_progress_bar() {
     local filled=$((current * width / total))
     local empty=$((width - filled))
 
-    printf "\r${COLOR_CYAN}["
-    printf "%${filled}s" | tr ' ' '='
-    printf "%${empty}s" | tr ' ' ' '
-    printf "] %3d%% (%d/%d)${COLOR_RESET}" "$percentage" "$current" "$total"
+    printf "\r${COLOR_CYAN}[" >&2
+    printf "%${filled}s" | tr ' ' '=' >&2
+    printf "%${empty}s" | tr ' ' ' ' >&2
+    printf "] %3d%% (%d/%d)${COLOR_RESET}" "$percentage" "$current" "$total" >&2
 
     if [[ "$current" -eq "$total" ]]; then
-        echo ""
+        echo "" >&2
     fi
 }
 

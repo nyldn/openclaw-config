@@ -106,14 +106,6 @@ modules:
     description: "Automated daily updates system"
     description_long: "Automatic update system for keeping all installed tools and dependencies current."
 
-  rclone:
-    version: "1.0.0"
-    required: false
-    category: "deployment"
-    size: "~40MB"
-    description: "Cloud storage sync (50+ backends)"
-    description_long: "Rclone for syncing files with 50+ cloud storage providers including S3, Google Drive, Dropbox, and more."
-
   security:
     version: "1.0.0"
     required: false
