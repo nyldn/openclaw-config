@@ -2,6 +2,18 @@
 
 # OpenClaw Remote Installation Script
 # Fetches and runs the bootstrap system from GitHub
+#
+# SECURITY NOTICE:
+# This script is designed to be safe for curl | bash usage:
+# - Uses mktemp for secure temporary directories
+# - Clones full repository for inspection
+# - Auto-detects TTY and uses non-interactive mode when piped
+# - Only installs minimal modules (system-deps, python, nodejs) by default
+#
+# RECOMMENDED: Clone repository and review before running:
+#   git clone https://github.com/nyldn/openclaw-config.git
+#   cd openclaw-config/bootstrap
+#   ./bootstrap.sh --interactive
 
 set -euo pipefail
 
@@ -88,18 +100,22 @@ install_bootstrap() {
     # Create install directory
     mkdir -p "$INSTALL_DIR"
 
-    # Copy bootstrap directory
-    if [[ -d "$TEMP_DIR/bootstrap" ]]; then
-        cp -r "$TEMP_DIR/bootstrap/"* "$INSTALL_DIR/"
-        log_success "Bootstrap files copied to $INSTALL_DIR"
+    # Copy entire repository (not just bootstrap)
+    if [[ -d "$TEMP_DIR" ]]; then
+        # Copy all files except .git
+        rsync -a --exclude='.git' "$TEMP_DIR/" "$INSTALL_DIR/" || \
+        cp -r "$TEMP_DIR/"* "$INSTALL_DIR/" 2>/dev/null || true
+
+        log_success "Repository files copied to $INSTALL_DIR"
     else
-        log_error "Bootstrap directory not found in repository"
+        log_error "Repository not found"
         exit 1
     fi
 
     # Make scripts executable
-    chmod +x "$INSTALL_DIR/bootstrap.sh"
-    chmod +x "$INSTALL_DIR/modules/"*.sh 2>/dev/null || true
+    chmod +x "$INSTALL_DIR/bootstrap/bootstrap.sh" 2>/dev/null || true
+    chmod +x "$INSTALL_DIR/bootstrap/modules/"*.sh 2>/dev/null || true
+    chmod +x "$INSTALL_DIR/bootstrap/scripts/"*.sh 2>/dev/null || true
 
     log_success "Bootstrap system installed"
 }
@@ -108,13 +124,23 @@ install_bootstrap() {
 run_bootstrap() {
     log_info "Running bootstrap installation"
 
-    cd "$INSTALL_DIR" || exit 1
+    cd "$INSTALL_DIR/bootstrap" || exit 1
 
-    # Pass any arguments to bootstrap script
-    if ./bootstrap.sh "$@"; then
+    # Check if we have a TTY
+    local bootstrap_args=("$@")
+
+    if [[ ! -t 0 ]]; then
+        log_warn "No TTY detected (running via curl | bash)"
+        log_info "Using non-interactive mode with minimal installation"
+        bootstrap_args=("--non-interactive" "--only" "system-deps,python,nodejs")
+    fi
+
+    # Pass arguments to bootstrap script
+    if ./bootstrap.sh "${bootstrap_args[@]}"; then
         log_success "Bootstrap completed successfully"
     else
         log_error "Bootstrap failed"
+        log_info "Check logs at: $INSTALL_DIR/bootstrap/logs/"
         exit 1
     fi
 
@@ -156,10 +182,21 @@ main() {
     echo ""
     log_success "Installation complete!"
     echo ""
-    log_info "Bootstrap directory: $INSTALL_DIR"
-    log_info "Workspace directory: $HOME/openclaw-workspace"
+    log_info "Repository: $INSTALL_DIR"
+    log_info "Bootstrap: $INSTALL_DIR/bootstrap"
+    log_info "Workspace: $HOME/openclaw-workspace"
     echo ""
-    log_info "To run bootstrap again: cd $INSTALL_DIR && ./bootstrap.sh"
+
+    if [[ -t 0 ]]; then
+        log_info "To customize installation:"
+        log_info "  cd $INSTALL_DIR/bootstrap && ./bootstrap.sh --interactive"
+    else
+        log_info "Minimal installation completed (system-deps, python, nodejs)"
+        log_info "To install more modules:"
+        log_info "  cd $INSTALL_DIR/bootstrap"
+        log_info "  ./bootstrap.sh --interactive"
+        log_info "  ./bootstrap.sh --list-modules  # See all available modules"
+    fi
 }
 
 # Run main function
