@@ -110,5 +110,9 @@ memory/
 data/
 .local/
 
+# Testing (Docker artifacts)
+/openclaw-interactive-test/
+.docker-build-cache/
+
 # Keep Directory Structure
 !.gitkeep

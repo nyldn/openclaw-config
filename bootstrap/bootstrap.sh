@@ -505,13 +505,6 @@ run_interactive_mode() {
     local -a all_modules
     all_modules=($(discover_modules))
 
-    # Build dependency graph
-    local -a module_files=()
-    for module in "${all_modules[@]}"; do
-        module_files+=("$MODULES_DIR/${module}.sh")
-    done
-    build_dependency_graph "${module_files[@]}"
-
     # Show preset menu
     log_info "Showing preset selection..."
     local preset
@@ -554,7 +547,7 @@ run_interactive_mode() {
     # Auto-include dependencies
     log_info "Resolving dependencies..."
     local all_modules_str
-    all_modules_str=$(auto_include_dependencies "${SELECTED_MODULES[@]}")
+    all_modules_str=$(auto_include_dependencies "$MODULES_DIR" "${SELECTED_MODULES[@]}")
 
     # Update selected modules with dependencies
     read -ra SELECTED_MODULES <<< "$all_modules_str"
@@ -564,7 +557,7 @@ run_interactive_mode() {
     # Resolve installation order
     log_info "Determining installation order..."
     local ordered_modules_str
-    ordered_modules_str=$(resolve_dependencies "${SELECTED_MODULES[@]}")
+    ordered_modules_str=$(resolve_dependencies "$MODULES_DIR" "${SELECTED_MODULES[@]}")
 
     if [[ $? -ne 0 ]]; then
         log_error "Failed to resolve dependencies (circular dependency detected)"

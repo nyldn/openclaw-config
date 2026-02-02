@@ -1,0 +1,52 @@
+# OpenClaw v2.0 Interactive Testing Environment
+# Provides a clean Debian environment to test the installation interactively
+
+FROM debian:12-slim
+
+# Set environment to non-interactive for setup
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install prerequisites
+RUN apt-get update && apt-get install -y \
+    git \
+    curl \
+    sudo \
+    dialog \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create a test user (non-root)
+RUN useradd -m -s /bin/bash testuser && \
+    echo "testuser ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+
+# Switch to test user
+USER testuser
+WORKDIR /home/testuser
+
+# Copy the local repository
+COPY --chown=testuser:testuser . /home/testuser/openclaw-config
+
+# Set up a welcome message
+RUN echo 'echo ""' >> ~/.bashrc && \
+    echo 'echo "╔════════════════════════════════════════════════════════════╗"' >> ~/.bashrc && \
+    echo 'echo "║  Welcome to OpenClaw v2.0 Interactive Testing!           ║"' >> ~/.bashrc && \
+    echo 'echo "╚════════════════════════════════════════════════════════════╝"' >> ~/.bashrc && \
+    echo 'echo ""' >> ~/.bashrc && \
+    echo 'echo "📍 You are in a clean Debian 12 environment"' >> ~/.bashrc && \
+    echo 'echo "📁 Repository: ~/openclaw-config"' >> ~/.bashrc && \
+    echo 'echo ""' >> ~/.bashrc && \
+    echo 'echo "🚀 Quick Start Commands:"' >> ~/.bashrc && \
+    echo 'echo "  cd ~/openclaw-config/bootstrap"' >> ~/.bashrc && \
+    echo 'echo "  ./bootstrap.sh --interactive    # Interactive installation"' >> ~/.bashrc && \
+    echo 'echo "  ./bootstrap.sh --help          # See all options"' >> ~/.bashrc && \
+    echo 'echo ""' >> ~/.bashrc && \
+    echo 'echo "📖 Options to try:"' >> ~/.bashrc && \
+    echo 'echo "  --only system-deps,python      # Install specific modules"' >> ~/.bashrc && \
+    echo 'echo "  --list-modules                 # List all available modules"' >> ~/.bashrc && \
+    echo 'echo "  --dry-run                      # Preview without installing"' >> ~/.bashrc && \
+    echo 'echo ""' >> ~/.bashrc
+
+# Set working directory
+WORKDIR /home/testuser/openclaw-config/bootstrap
+
+# Interactive shell by default
+CMD ["/bin/bash"]
