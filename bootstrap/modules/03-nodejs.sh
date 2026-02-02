@@ -59,12 +59,32 @@ install() {
     # Add NodeSource repository for Node.js 20 LTS
     log_progress "Adding NodeSource repository for Node.js 20 LTS"
 
-    # Download and run NodeSource setup script
-    if ! curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -; then
-        log_error "Failed to add NodeSource repository"
+    # Download NodeSource setup script to temporary file
+    local nodejs_setup_script
+    nodejs_setup_script=$(mktemp)
+
+    # Ensure cleanup on exit
+    trap 'rm -f "$nodejs_setup_script"' RETURN
+
+    log_progress "Downloading NodeSource setup script"
+    if ! curl -fsSL -o "$nodejs_setup_script" https://deb.nodesource.com/setup_20.x; then
+        log_error "Failed to download NodeSource setup script"
+        rm -f "$nodejs_setup_script"
         return 1
     fi
 
+    # Note: We cannot verify checksum as NodeSource updates this file regularly
+    # In a production environment, consider maintaining a known-good version
+    log_warn "Executing NodeSource setup script (checksum verification not available)"
+
+    # Execute with sudo
+    if ! sudo -E bash "$nodejs_setup_script"; then
+        log_error "Failed to add NodeSource repository"
+        rm -f "$nodejs_setup_script"
+        return 1
+    fi
+
+    rm -f "$nodejs_setup_script"
     log_success "NodeSource repository added"
 
     # Install Node.js

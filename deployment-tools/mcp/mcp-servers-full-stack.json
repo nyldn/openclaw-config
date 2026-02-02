@@ -80,6 +80,40 @@
         "-y",
         "@modelcontextprotocol/server-sequential-thinking"
       ]
+    },
+    "google-calendar": {
+      "command": "node",
+      "args": ["/app/mcp-servers/google-calendar-mcp.js"],
+      "env": {
+        "GOOGLE_APPLICATION_CREDENTIALS": "/app/data/mcp/google-calendar-credentials.json"
+      }
+    },
+    "email": {
+      "command": "node",
+      "args": ["/app/mcp-servers/email-mcp.js"],
+      "env": {
+        "EMAIL_IMAP_HOST": "${EMAIL_IMAP_HOST}",
+        "EMAIL_IMAP_PORT": "${EMAIL_IMAP_PORT}",
+        "EMAIL_SMTP_HOST": "${EMAIL_SMTP_HOST}",
+        "EMAIL_SMTP_PORT": "${EMAIL_SMTP_PORT}",
+        "EMAIL_USERNAME": "${EMAIL_USERNAME}",
+        "EMAIL_PASSWORD": "${EMAIL_PASSWORD}"
+      }
+    },
+    "todoist": {
+      "command": "node",
+      "args": ["/app/mcp-servers/todoist-mcp.js"],
+      "env": {
+        "TODOIST_API_TOKEN": "${TODOIST_API_TOKEN}"
+      }
+    },
+    "slack": {
+      "command": "node",
+      "args": ["/app/mcp-servers/slack-mcp.js"],
+      "env": {
+        "SLACK_BOT_TOKEN": "${SLACK_BOT_TOKEN}",
+        "SLACK_APP_TOKEN": "${SLACK_APP_TOKEN}"
+      }
     }
   }
 }

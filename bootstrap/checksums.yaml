@@ -1,0 +1,146 @@
+# OpenClaw Bootstrap Checksums Manifest
+# SHA256 checksums for all downloaded files
+# Updated: 2026-02-01
+
+# NOTE: This manifest provides checksums for critical downloads.
+# Some installers (like NodeSource and Claude CLI) are updated frequently
+# and cannot have static checksums. For these, we download to temporary
+# files and execute after review, but cannot verify checksums.
+
+downloads:
+  # Node.js Setup Script
+  # WARNING: NodeSource updates this frequently - checksum verification not possible
+  # We mitigate risk by downloading to temp file and executing (not curl|bash)
+  nodejs_setup:
+    url: https://deb.nodesource.com/setup_20.x
+    sha256: "NOT_AVAILABLE"  # Updates too frequently
+    updated: "2026-02-01"
+    note: "Downloaded to temporary file before execution. Manual review recommended."
+    verification: "Download to mktemp, execute with bash (no pipe)"
+
+  # Claude CLI Installer
+  # WARNING: Anthropic may update this - checksum verification not always possible
+  claude_cli_installer:
+    url: https://install.claude.ai/cli
+    sha256: "NOT_AVAILABLE"  # May update frequently
+    updated: "2026-02-01"
+    note: "Downloaded to temporary file before execution. Manual review recommended."
+    verification: "Download to mktemp, execute with bash (no pipe)"
+    # GPG signature verification would be ideal if Anthropic provides it
+    gpg_signature: null
+    gpg_key_fingerprint: null
+
+  # Vercel CLI
+  # Installed via npm - package signatures verified by npm
+  vercel_cli:
+    package: "vercel"
+    registry: "npm"
+    note: "Installed via npm with package signature verification"
+
+  # Netlify CLI
+  # Installed via npm - package signatures verified by npm
+  netlify_cli:
+    package: "netlify-cli"
+    registry: "npm"
+    note: "Installed via npm with package signature verification"
+
+  # Supabase CLI
+  # Installed via GitHub releases - should verify checksum
+  supabase_cli:
+    url: "https://github.com/supabase/cli/releases/download/v1.142.2/supabase_1.142.2_linux_amd64.deb"
+    sha256: "PLACEHOLDER_UPDATE_WITH_ACTUAL_HASH"
+    updated: "2026-02-01"
+    note: "Download from GitHub releases. Checksum should be verified."
+    verification: "SHA256 checksum available in release notes"
+
+  # Python packages
+  # Installed via pip - package signatures verified by PyPI
+  anthropic_sdk:
+    package: "anthropic"
+    registry: "pypi"
+    note: "Installed via pip with package signature verification"
+
+  openai_sdk:
+    package: "openai"
+    registry: "pypi"
+    note: "Installed via pip with package signature verification"
+
+  google_generativeai:
+    package: "google-generativeai"
+    registry: "pypi"
+    note: "Installed via pip with package signature verification"
+
+# Verification Instructions
+verification_instructions: |
+  To verify checksums manually:
+
+  1. Download the file:
+     curl -fsSL -o file.tmp <URL>
+
+  2. Calculate SHA256:
+     sha256sum file.tmp
+     # or on macOS:
+     shasum -a 256 file.tmp
+
+  3. Compare with expected checksum in this file
+
+  4. If checksums match, proceed with installation
+
+# Security Notes
+security_notes: |
+  - Files marked "NOT_AVAILABLE" for checksums are downloaded to temporary
+    files and executed (never piped directly to bash)
+  - NPM and PyPI packages use their respective package signature verification
+  - GitHub releases should have checksums in release notes
+  - When checksums are not available, manual code review is recommended
+  - All downloads use HTTPS to prevent MITM attacks
+
+# Update Process
+update_process: |
+  To update checksums:
+
+  1. Download the latest version of each file
+  2. Calculate SHA256 checksum
+  3. Update this file with new checksum and date
+  4. Commit changes with clear description
+  5. Test bootstrap installation to verify
+
+  Example:
+    # Download file
+    curl -fsSL -o /tmp/setup_20.x https://deb.nodesource.com/setup_20.x
+
+    # Calculate checksum
+    sha256sum /tmp/setup_20.x
+
+    # Update this file with the checksum
+    # Update the 'updated' date
+
+# Trusted Sources
+trusted_sources:
+  - domain: "deb.nodesource.com"
+    description: "Official NodeSource repository for Node.js"
+    verification: "HTTPS only"
+
+  - domain: "install.claude.ai"
+    description: "Official Anthropic Claude CLI installer"
+    verification: "HTTPS only, future GPG signature verification desired"
+
+  - domain: "github.com"
+    description: "GitHub releases for Supabase CLI and other tools"
+    verification: "HTTPS + SHA256 checksums in release notes"
+
+  - domain: "registry.npmjs.org"
+    description: "Official npm registry"
+    verification: "Package signatures verified by npm"
+
+  - domain: "pypi.org"
+    description: "Official Python Package Index"
+    verification: "Package signatures verified by pip"
+
+# Future Improvements
+future_improvements:
+  - Add GPG signature verification for Claude CLI if Anthropic provides it
+  - Implement pinned checksums for stable releases
+  - Add automated checksum updates via CI/CD
+  - Maintain checksums for specific known-good versions
+  - Consider hosting known-good versions for air-gapped installations

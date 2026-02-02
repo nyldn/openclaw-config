@@ -143,6 +143,23 @@ EOF
 
     log_success ".gitignore created"
 
+    # Generate TOOLS.md for OpenClaw workspace
+    log_progress "Generating TOOLS.md for OpenClaw workspace..."
+    local tools_script="$(dirname "$SCRIPT_DIR")/scripts/generate-openclaw-tools-doc.sh"
+
+    if [[ -x "$tools_script" ]]; then
+        if bash "$tools_script" 2>&1 | tee /tmp/openclaw-tools-gen.log; then
+            log_success "TOOLS.md generated successfully"
+            log_info "OpenClaw will read ~/.openclaw/workspace/TOOLS.md to understand available tools"
+        else
+            log_warn "Failed to generate TOOLS.md"
+            log_info "You can manually run: $tools_script"
+        fi
+    else
+        log_warn "TOOLS.md generation script not found or not executable"
+        log_info "Expected: $tools_script"
+    fi
+
     # Security warnings
     log_warn ""
     log_warn "========================================="

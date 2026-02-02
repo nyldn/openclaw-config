@@ -112,9 +112,16 @@ install() {
         local key
         key=$(echo "$setting" | cut -d' ' -f1)
 
+        # Escape special characters for safe use in sed
+        local safe_key safe_setting
+        # Escape regex special characters in key for grep/sed pattern
+        safe_key=$(printf '%s\n' "$key" | sed 's/[.[\*^$/]/\\&/g')
+        # Escape replacement special characters (& and /) in setting
+        safe_setting=$(printf '%s\n' "$setting" | sed 's/[\/&]/\\&/g')
+
         # Check if setting exists and update, or append
-        if sudo grep -q "^$key" "$SSH_CONFIG"; then
-            sudo sed -i "s/^$key.*/$setting/" "$SSH_CONFIG"
+        if sudo grep -q "^${key}" "$SSH_CONFIG"; then
+            sudo sed -i "s/^${safe_key}.*/${safe_setting}/" "$SSH_CONFIG"
         else
             echo "$setting" | sudo tee -a "$SSH_CONFIG" >/dev/null
         fi

@@ -1,51 +1,142 @@
-version: "1.0.0"
+version: "2.0.0"
 updated_at: "2026-02-01T00:00:00Z"
+
+# Module categories:
+# - foundation: Core system dependencies (always required)
+# - ai-tools: LLM CLIs and AI assistants (optional)
+# - deployment: Cloud deployment tools (optional)
+# - development: Development utilities (optional)
+# - productivity: Personal productivity integrations (optional)
+# - security: Security hardening tools (recommended)
 
 modules:
   system-deps:
     version: "1.0.0"
     required: true
-    description: "Base system packages and dependencies"
+    category: "foundation"
+    size: "~50MB"
+    description: "Base system packages and dependencies (git, curl, build tools)"
+    description_long: "Essential system packages including compilers, version control, SSL libraries, and development headers required by all other modules."
 
   python:
     version: "1.0.0"
-    required: true
+    required: false
+    category: "foundation"
+    size: "~100MB"
     description: "Python 3.9+ runtime and package management"
+    description_long: "Python 3.9+ with pip, virtual environment support, and common scientific libraries. Required by most AI CLI tools."
 
   nodejs:
     version: "1.0.0"
-    required: true
+    required: false
+    category: "foundation"
+    size: "~80MB"
     description: "Node.js 20+ runtime and npm"
+    description_long: "Node.js 20 LTS with npm package manager. Required for deployment tools and some MCP servers."
 
   claude-cli:
     version: "1.0.0"
     required: false
+    category: "ai-tools"
+    size: "~200MB"
     description: "Claude Code CLI and Anthropic SDK"
+    description_long: "Official Anthropic Claude CLI for interacting with Claude AI models. Includes Python SDK."
 
   codex-cli:
     version: "1.0.0"
     required: false
+    category: "ai-tools"
+    size: "~150MB"
     description: "OpenAI CLI and Python SDK"
+    description_long: "OpenAI CLI for GPT-4 and GPT-3.5 models. Includes official Python SDK."
 
   gemini-cli:
     version: "1.0.0"
     required: false
+    category: "ai-tools"
+    size: "~150MB"
     description: "Google Gemini CLI and SDK"
+    description_long: "Google Gemini CLI for accessing Gemini Pro and Ultra models. Includes Python SDK."
 
   openclaw-env:
     version: "1.0.0"
-    required: true
-    description: "GOTCHA framework directory structure"
+    required: false
+    category: "ai-tools"
+    size: "~20MB"
+    description: "OpenClaw environment configuration"
+    description_long: "GOTCHA framework directory structure and environment configuration for OpenClaw projects."
 
   memory-init:
     version: "1.0.0"
-    required: true
-    description: "Memory system initialization"
+    required: false
+    category: "development"
+    size: "~10MB"
+    description: "SQLite-based memory system initialization"
+    description_long: "Persistent memory system using SQLite for storing conversation history and context."
 
   claude-octopus:
     version: "1.0.0"
     required: false
-    description: "Claude Octopus plugin for advanced AI personas and workflows"
+    category: "ai-tools"
+    size: "~100MB"
+    description: "Multi-AI orchestration system"
+    description_long: "Claude Octopus plugin providing advanced AI personas, workflows, and multi-model orchestration capabilities."
+
+  deployment-tools:
+    version: "1.0.0"
+    required: false
+    category: "deployment"
+    size: "~300MB"
+    description: "Vercel, Netlify, Supabase CLIs and MCP servers"
+    description_long: "Complete deployment toolkit including Vercel CLI, Netlify CLI, Supabase CLI, and associated MCP servers for serverless deployments."
+
+  dev-tools:
+    version: "1.0.0"
+    required: false
+    category: "development"
+    size: "~50MB"
+    description: "Development utilities and shell enhancements"
+    description_long: "Useful development tools, shell aliases, and productivity enhancements for software development."
+
+  auto-updates:
+    version: "1.0.0"
+    required: false
+    category: "development"
+    size: "~5MB"
+    description: "Automated daily updates system"
+    description_long: "Automatic update system for keeping all installed tools and dependencies current."
+
+  rclone:
+    version: "1.0.0"
+    required: false
+    category: "deployment"
+    size: "~40MB"
+    description: "Cloud storage sync (50+ backends)"
+    description_long: "Rclone for syncing files with 50+ cloud storage providers including S3, Google Drive, Dropbox, and more."
+
+  security:
+    version: "1.0.0"
+    required: false
+    category: "security"
+    size: "~30MB"
+    description: "SSH hardening, firewall, fail2ban"
+    description_long: "Security hardening including SSH configuration, UFW firewall setup, fail2ban intrusion prevention, and security best practices."
+
+  openclaw:
+    version: "1.0.0"
+    required: false
+    category: "ai-tools"
+    size: "~500MB"
+    description: "OpenClaw AI assistant (optional)"
+    description_long: "Complete OpenClaw AI assistant installation. This is a large optional component - only install if you need the full OpenClaw system."
+
+  productivity-tools:
+    version: "1.0.0"
+    required: false
+    category: "productivity"
+    size: "~100MB"
+    description: "Calendar, Email, Tasks, Slack MCP servers"
+    description_long: "Personal productivity integrations including Google Calendar, IMAP/SMTP email, Todoist tasks, and Slack messaging via MCP servers."
 
 packages:
   system:

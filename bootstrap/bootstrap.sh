@@ -16,6 +16,10 @@ source "$SCRIPT_DIR/lib/logger.sh"
 source "$SCRIPT_DIR/lib/validation.sh"
 # shellcheck source=lib/network.sh
 source "$SCRIPT_DIR/lib/network.sh"
+# shellcheck source=lib/interactive.sh
+source "$SCRIPT_DIR/lib/interactive.sh"
+# shellcheck source=lib/dependency-resolver.sh
+source "$SCRIPT_DIR/lib/dependency-resolver.sh"
 
 # Configuration
 STATE_DIR="$HOME/.openclaw"
@@ -23,12 +27,13 @@ STATE_FILE="$STATE_DIR/bootstrap-state.yaml"
 MODULES_DIR="$SCRIPT_DIR/modules"
 CONFIG_DIR="$SCRIPT_DIR/config"
 MANIFEST_FILE="$SCRIPT_DIR/manifest.yaml"
-DEFAULT_MANIFEST_URL="https://raw.githubusercontent.com/user/openclawd-config/main/bootstrap/manifest.yaml"
+DEFAULT_MANIFEST_URL="https://raw.githubusercontent.com/nyldn/openclaw-config/main/bootstrap/manifest.yaml"
 
 # Command-line options
 VERBOSE=false
 DRY_RUN=false
 NON_INTERACTIVE=false
+INTERACTIVE_MODE=false
 UPDATE_MODE=false
 CHECK_ONLY=false
 VALIDATE_ONLY=false
@@ -47,7 +52,8 @@ OPTIONS:
     -h, --help              Show this help message
     -v, --verbose           Enable verbose output
     -d, --dry-run           Preview actions without executing
-    -n, --non-interactive   Run without prompts
+    -i, --interactive       Force interactive mode (default if TTY available)
+    -n, --non-interactive   Run without prompts (for automation/CI)
     -u, --update            Check for and install updates
     -c, --check-updates     Only check for updates, don't install
     -V, --validate          Validate existing installation
@@ -99,6 +105,10 @@ parse_args() {
                 DRY_RUN=true
                 shift
                 ;;
+            -i|--interactive)
+                INTERACTIVE_MODE=true
+                shift
+                ;;
             -n|--non-interactive)
                 NON_INTERACTIVE=true
                 shift
@@ -122,17 +132,41 @@ parse_args() {
                 ;;
             --only)
                 IFS=',' read -ra SELECTED_MODULES <<< "$2"
+                # Validate module names
+                for module in "${SELECTED_MODULES[@]}"; do
+                    if ! validate_module_name "$module"; then
+                        log_error "Invalid module name: $module"
+                        exit 1
+                    fi
+                done
                 shift 2
                 ;;
             --skip)
                 IFS=',' read -ra SKIP_MODULES <<< "$2"
+                # Validate module names
+                for module in "${SKIP_MODULES[@]}"; do
+                    if ! validate_module_name "$module"; then
+                        log_error "Invalid module name: $module"
+                        exit 1
+                    fi
+                done
                 shift 2
                 ;;
             --module)
                 SELECTED_MODULES=("$2")
+                # Validate module name
+                if ! validate_module_name "$2"; then
+                    log_error "Invalid module name: $2"
+                    exit 1
+                fi
                 shift 2
                 ;;
             --manifest-url)
+                # Validate URL
+                if ! validate_url "$2"; then
+                    log_error "Invalid manifest URL: $2"
+                    exit 1
+                fi
                 MANIFEST_URL="$2"
                 shift 2
                 ;;
@@ -453,6 +487,105 @@ run_doctor() {
     log_success "Diagnostics complete"
 }
 
+# Run interactive module selection
+run_interactive_mode() {
+    log_section "Interactive Module Selection"
+
+    # Initialize interactive system
+    if ! interactive_init; then
+        log_warn "Interactive mode not available (no TTY detected)"
+        log_info "Falling back to non-interactive mode"
+        return 1
+    fi
+
+    # Show welcome screen
+    show_welcome_screen
+
+    # Get all available modules
+    local -a all_modules
+    all_modules=($(discover_modules))
+
+    # Build dependency graph
+    local -a module_files=()
+    for module in "${all_modules[@]}"; do
+        module_files+=("$MODULES_DIR/${module}.sh")
+    done
+    build_dependency_graph "${module_files[@]}"
+
+    # Show preset menu
+    log_info "Showing preset selection..."
+    local preset
+    preset=$(show_preset_menu)
+
+    if [[ $? -ne 0 ]]; then
+        log_error "Preset selection cancelled"
+        return 1
+    fi
+
+    log_info "Selected preset: $preset"
+
+    # Get modules based on preset
+    local selected_modules_str=""
+
+    if [[ "$preset" == "custom" ]]; then
+        # Show module selection menu
+        log_info "Showing module selection menu..."
+        selected_modules_str=$(show_module_menu "${all_modules[@]}")
+
+        if [[ $? -ne 0 ]]; then
+            log_error "Module selection cancelled"
+            return 1
+        fi
+    else
+        # Get preset modules
+        selected_modules_str=$(get_preset_modules "$preset")
+    fi
+
+    # Convert to array
+    read -ra SELECTED_MODULES <<< "$selected_modules_str"
+
+    if [[ ${#SELECTED_MODULES[@]} -eq 0 ]]; then
+        log_error "No modules selected"
+        return 1
+    fi
+
+    log_info "User selected modules: ${SELECTED_MODULES[*]}"
+
+    # Auto-include dependencies
+    log_info "Resolving dependencies..."
+    local all_modules_str
+    all_modules_str=$(auto_include_dependencies "${SELECTED_MODULES[@]}")
+
+    # Update selected modules with dependencies
+    read -ra SELECTED_MODULES <<< "$all_modules_str"
+
+    log_success "Modules with dependencies: ${SELECTED_MODULES[*]}"
+
+    # Resolve installation order
+    log_info "Determining installation order..."
+    local ordered_modules_str
+    ordered_modules_str=$(resolve_dependencies "${SELECTED_MODULES[@]}")
+
+    if [[ $? -ne 0 ]]; then
+        log_error "Failed to resolve dependencies (circular dependency detected)"
+        return 1
+    fi
+
+    # Update selected modules with correct order
+    read -ra SELECTED_MODULES <<< "$ordered_modules_str"
+
+    log_success "Installation order: ${SELECTED_MODULES[*]}"
+
+    # Show confirmation
+    if ! confirm_installation "${SELECTED_MODULES[@]}"; then
+        log_warn "Installation cancelled by user"
+        return 1
+    fi
+
+    log_success "Interactive module selection complete"
+    return 0
+}
+
 # Main installation flow
 main() {
     # Parse arguments
@@ -493,12 +626,45 @@ main() {
         exit 1
     fi
 
-    # Discover modules
-    log_info "Discovering installation modules"
-    local modules
-    modules=($(discover_modules))
+    # Determine if we should enter interactive mode
+    # Interactive mode is enabled if:
+    # 1. --interactive flag is set, OR
+    # 2. No --only/--skip/--module flags AND not --non-interactive AND TTY available
+    local should_run_interactive=false
 
-    log_info "Found ${#modules[@]} modules: ${modules[*]}"
+    if [[ "$INTERACTIVE_MODE" == "true" ]]; then
+        should_run_interactive=true
+    elif [[ "$NON_INTERACTIVE" == "false" ]] && \
+         [[ ${#SELECTED_MODULES[@]} -eq 0 ]] && \
+         [[ ${#SKIP_MODULES[@]} -eq 0 ]] && \
+         [[ -t 0 && -t 1 ]]; then
+        should_run_interactive=true
+    fi
+
+    # Run interactive mode if enabled
+    if [[ "$should_run_interactive" == "true" ]]; then
+        if run_interactive_mode; then
+            log_success "Interactive mode completed"
+            # SELECTED_MODULES is now populated by run_interactive_mode
+        else
+            log_warn "Interactive mode not available or cancelled"
+            log_info "Continuing with default module installation"
+            # Fall back to discovering all modules
+            SELECTED_MODULES=()
+        fi
+    fi
+
+    # Discover modules (if not already selected via interactive mode)
+    local modules
+    if [[ ${#SELECTED_MODULES[@]} -eq 0 ]]; then
+        log_info "Discovering installation modules"
+        modules=($(discover_modules))
+        log_info "Found ${#modules[@]} modules: ${modules[*]}"
+    else
+        log_info "Using selected modules: ${SELECTED_MODULES[*]}"
+        # Use SELECTED_MODULES as the modules array
+        modules=("${SELECTED_MODULES[@]}")
+    fi
 
     # Install modules
     local failed_modules=()

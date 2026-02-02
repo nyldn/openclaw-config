@@ -33,10 +33,61 @@ logger_init() {
     local timestamp
     timestamp=$(date +"%Y-%m-%d-%H-%M-%S")
 
+    # Create log directory with restrictive permissions
     mkdir -p "$log_dir"
+    chmod 0700 "$log_dir"
+
     LOG_FILE="$log_dir/bootstrap-$timestamp.log"
 
+    # Create log file with restrictive permissions (owner read/write only)
+    touch "$LOG_FILE"
+    chmod 0600 "$LOG_FILE"
+
     log_info "Logging initialized: $LOG_FILE"
+}
+
+# Sanitize sensitive information from log messages
+# Usage: log_sanitize "message"
+log_sanitize() {
+    local message="$1"
+
+    # Redact common secret patterns
+    # API keys, tokens, passwords, secrets
+    message=$(echo "$message" | sed -E \
+        -e 's/(api[_-]?key|apikey)[[:space:]]*[=:][[:space:]]*['\''"]?[a-zA-Z0-9_-]{10,}['\''"]?/\1=***REDACTED***/gi' \
+        -e 's/(token|access[_-]?token)[[:space:]]*[=:][[:space:]]*['\''"]?[a-zA-Z0-9._-]{10,}['\''"]?/\1=***REDACTED***/gi' \
+        -e 's/(password|passwd|pwd)[[:space:]]*[=:][[:space:]]*['\''"]?[^[:space:]'\''\"]{6,}['\''"]?/\1=***REDACTED***/gi' \
+        -e 's/(secret|secret[_-]?key)[[:space:]]*[=:][[:space:]]*['\''"]?[a-zA-Z0-9_-]{10,}['\''"]?/\1=***REDACTED***/gi')
+
+    # Redact specific secret formats
+    # Anthropic API keys (sk-ant-...)
+    message=$(echo "$message" | sed -E 's/sk-ant-[a-zA-Z0-9_-]{95,}/***REDACTED_ANTHROPIC_KEY***/g')
+
+    # OpenAI API keys (sk-...)
+    message=$(echo "$message" | sed -E 's/sk-[a-zA-Z0-9]{48}/***REDACTED_OPENAI_KEY***/g')
+
+    # GitHub tokens (ghp_..., gho_..., ghs_...)
+    message=$(echo "$message" | sed -E 's/gh[pso]_[a-zA-Z0-9]{36,}/***REDACTED_GITHUB_TOKEN***/g')
+
+    # Slack tokens (xox[bpa]-...)
+    message=$(echo "$message" | sed -E 's/xox[bpa]-[a-zA-Z0-9-]+/***REDACTED_SLACK_TOKEN***/g')
+
+    # AWS access keys
+    message=$(echo "$message" | sed -E 's/AKIA[A-Z0-9]{16}/***REDACTED_AWS_KEY***/g')
+
+    # JWT tokens (header.payload.signature)
+    message=$(echo "$message" | sed -E 's/eyJ[a-zA-Z0-9_-]+\.eyJ[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+/***REDACTED_JWT***/g')
+
+    # Bearer tokens
+    message=$(echo "$message" | sed -E 's/Bearer[[:space:]]+[a-zA-Z0-9._-]{20,}/Bearer ***REDACTED***/gi')
+
+    # URLs with embedded credentials (https://user:pass@host)
+    message=$(echo "$message" | sed -E 's|(https?://)([^:]+):([^@]+)@|\1***REDACTED***:***REDACTED***@|g')
+
+    # Credit card numbers (simple pattern)
+    message=$(echo "$message" | sed -E 's/[0-9]{4}[- ]?[0-9]{4}[- ]?[0-9]{4}[- ]?[0-9]{4}/****-****-****-****/g')
+
+    echo "$message"
 }
 
 # Write to log file
@@ -46,8 +97,12 @@ _log_to_file() {
     local timestamp
     timestamp=$(date +"%Y-%m-%d %H:%M:%S")
 
+    # Sanitize message before writing to log
+    local sanitized_message
+    sanitized_message=$(log_sanitize "$message")
+
     if [[ -n "$LOG_FILE" ]]; then
-        echo "[$timestamp] [$level] $message" >> "$LOG_FILE"
+        echo "[$timestamp] [$level] $sanitized_message" >> "$LOG_FILE"
     fi
 }
 
@@ -55,7 +110,9 @@ _log_to_file() {
 # Usage: log_success "message"
 log_success() {
     local message="$1"
-    echo -e "${COLOR_GREEN}[${SYMBOL_SUCCESS}]${COLOR_RESET} $message"
+    local sanitized
+    sanitized=$(log_sanitize "$message")
+    echo -e "${COLOR_GREEN}[${SYMBOL_SUCCESS}]${COLOR_RESET} $sanitized"
     _log_to_file "SUCCESS" "$message"
 }
 
@@ -63,7 +120,9 @@ log_success() {
 # Usage: log_error "message"
 log_error() {
     local message="$1"
-    echo -e "${COLOR_RED}[${SYMBOL_ERROR}]${COLOR_RESET} $message" >&2
+    local sanitized
+    sanitized=$(log_sanitize "$message")
+    echo -e "${COLOR_RED}[${SYMBOL_ERROR}]${COLOR_RESET} $sanitized" >&2
     _log_to_file "ERROR" "$message"
 }
 
@@ -71,7 +130,9 @@ log_error() {
 # Usage: log_warn "message"
 log_warn() {
     local message="$1"
-    echo -e "${COLOR_YELLOW}[${SYMBOL_WARNING}]${COLOR_RESET} $message"
+    local sanitized
+    sanitized=$(log_sanitize "$message")
+    echo -e "${COLOR_YELLOW}[${SYMBOL_WARNING}]${COLOR_RESET} $sanitized"
     _log_to_file "WARN" "$message"
 }
 
@@ -79,7 +140,9 @@ log_warn() {
 # Usage: log_info "message"
 log_info() {
     local message="$1"
-    echo -e "${COLOR_BLUE}[${SYMBOL_INFO}]${COLOR_RESET} $message"
+    local sanitized
+    sanitized=$(log_sanitize "$message")
+    echo -e "${COLOR_BLUE}[${SYMBOL_INFO}]${COLOR_RESET} $sanitized"
     _log_to_file "INFO" "$message"
 }
 
@@ -87,7 +150,9 @@ log_info() {
 # Usage: log_progress "message"
 log_progress() {
     local message="$1"
-    echo -e "${COLOR_CYAN}[${SYMBOL_PROGRESS}]${COLOR_RESET} $message"
+    local sanitized
+    sanitized=$(log_sanitize "$message")
+    echo -e "${COLOR_CYAN}[${SYMBOL_PROGRESS}]${COLOR_RESET} $sanitized"
     _log_to_file "PROGRESS" "$message"
 }
 
@@ -144,6 +209,7 @@ log_progress_bar() {
 
 # Export functions
 export -f logger_init
+export -f log_sanitize
 export -f log_success
 export -f log_error
 export -f log_warn

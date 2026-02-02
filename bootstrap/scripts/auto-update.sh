@@ -297,7 +297,7 @@ update_mcp_servers() {
 }
 
 # Update openclaw-config repository
-update_openclawd_config() {
+update_openclaw_config() {
     log_info "Checking openclaw-config repository for updates..."
 
     local repo_dir="$HOME/openclaw-config"
@@ -470,10 +470,25 @@ main() {
     update_mcp_servers || log_warn "MCP servers update had issues"
     echo ""
 
-    update_openclawd_config || log_warn "openclaw-config update had issues"
+    update_openclaw_config || log_warn "openclaw-config update had issues"
     echo ""
 
     cleanup_packages || log_warn "Package cleanup had issues"
+    echo ""
+
+    # Regenerate OpenClaw TOOLS.md documentation
+    log_info "Regenerating OpenClaw TOOLS.md documentation..."
+    local tools_script="$HOME/openclaw-config/bootstrap/scripts/generate-openclaw-tools-doc.sh"
+
+    if [[ -x "$tools_script" ]]; then
+        if bash "$tools_script" 2>&1 | tee -a "$LOG_FILE"; then
+            log_success "TOOLS.md regenerated successfully"
+        else
+            log_warn "Failed to regenerate TOOLS.md"
+        fi
+    else
+        log_warn "TOOLS.md generation script not found"
+    fi
     echo ""
 
     generate_report

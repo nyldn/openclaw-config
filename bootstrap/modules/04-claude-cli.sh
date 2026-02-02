@@ -73,16 +73,36 @@ install() {
             # Alternative: Download from GitHub releases or official site
             log_progress "Downloading Claude CLI from official source"
 
-            # Placeholder for actual download URL
+            # Download installer to temporary file
             local install_url="https://install.claude.ai/cli"
+            local claude_installer
+            claude_installer=$(mktemp)
 
-            if curl -fsSL "$install_url" | bash; then
+            # Ensure cleanup
+            trap 'rm -f "$claude_installer"' RETURN
+
+            log_progress "Downloading Claude CLI installer"
+            if ! curl -fsSL -o "$claude_installer" "$install_url"; then
+                log_error "Failed to download Claude CLI installer"
+                log_info "Please install manually from: https://claude.ai/download"
+                rm -f "$claude_installer"
+                return 1
+            fi
+
+            # Note: Cannot verify checksum as Claude CLI installer may update frequently
+            log_warn "Executing Claude CLI installer (checksum verification not available)"
+
+            # Execute installer
+            if bash "$claude_installer"; then
                 log_success "Claude CLI installed"
             else
                 log_error "Failed to install Claude CLI"
                 log_info "Please install manually from: https://claude.ai/download"
+                rm -f "$claude_installer"
                 return 1
             fi
+
+            rm -f "$claude_installer"
         fi
     else
         log_error "npm not available for Claude CLI installation"

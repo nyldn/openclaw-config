@@ -6,10 +6,10 @@
 set -euo pipefail
 
 # Configuration
-REPO_URL="https://github.com/user/openclawd-config"
+REPO_URL="https://github.com/nyldn/openclaw-config"
 BRANCH="main"
-TEMP_DIR="/tmp/openclaw-bootstrap-$$"
-INSTALL_DIR="$HOME/openclaw-bootstrap"
+TEMP_DIR=""  # Will be set using mktemp
+INSTALL_DIR="$HOME/openclaw-config"
 
 # Colors
 RED='\033[0;31m'
@@ -63,8 +63,14 @@ check_prerequisites() {
 clone_repo() {
     log_info "Cloning OpenClaw repository"
 
-    # Remove temp directory if it exists
-    rm -rf "$TEMP_DIR"
+    # Create secure temporary directory
+    TEMP_DIR=$(mktemp -d) || {
+        log_error "Failed to create temporary directory"
+        exit 1
+    }
+
+    # Ensure cleanup on exit
+    trap 'rm -rf "$TEMP_DIR"' EXIT INT TERM
 
     # Clone to temp directory
     if git clone --depth 1 --branch "$BRANCH" "$REPO_URL" "$TEMP_DIR" &>/dev/null; then

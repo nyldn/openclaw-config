@@ -1,22 +1,51 @@
-# OpenClaw VM Configuration
+# OpenClaw VM Configuration v2.0
 
-Automated configuration and deployment system for OpenClaw VMs with comprehensive tooling for AI development, cloud deployment, and file sharing.
+Automated configuration and deployment system for OpenClaw VMs with comprehensive tooling for AI development, cloud deployment, file sharing, and personal productivity.
+
+**What's New in v2.0:**
+- 🎯 Interactive installation with preset selection
+- 🔒 Comprehensive security hardening (20+ vulnerabilities fixed)
+- 📅 Personal productivity integrations (Calendar, Email, Tasks, Slack)
+- 🔐 Credential encryption at rest
+- 🛡️ Pre-commit secret detection
+- ⚡ Smart dependency resolution
 
 ## 🚀 Quick Start
 
-### Remote Installation (One-Line)
+### Installation
+
+**Recommended Method (Secure):**
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/nyldn/openclaw-config/main/bootstrap/install.sh | bash
-```
-
-### Local Installation
-
-```bash
+# Clone the repository
 git clone https://github.com/nyldn/openclaw-config.git
 cd openclaw-config/bootstrap
+
+# Run the interactive installer
 ./bootstrap.sh
 ```
+
+The installer will:
+- ✅ Verify prerequisites (git, curl, bash)
+- ✅ Show an interactive module selection menu
+- ✅ Install only the components you choose
+- ✅ Complete in ~5-15 minutes depending on selections
+
+**Non-Interactive Mode:**
+
+For automated installations (CI/CD, scripts):
+
+```bash
+# Install all modules without prompts
+./bootstrap.sh --non-interactive
+
+# Install specific modules only
+./bootstrap.sh --only system-deps,nodejs,python
+```
+
+See [INSTALLATION.md](INSTALLATION.md) for detailed installation options and customization.
+
+**Security Note:** We no longer support `curl | bash` installation methods as they pose security risks. Always clone the repository first to review the code before execution.
 
 ## 📦 What's Included
 
@@ -44,7 +73,8 @@ cd openclaw-config/bootstrap
 - **Memory system** - SQLite-based persistence
 - **Auto-updates** - Daily automated updates for all components
 
-### MCP Servers (6 Total)
+### MCP Servers (10+ Total)
+**Core Servers:**
 - Google Drive - File operations and sharing
 - Dropbox - Cloud storage access
 - GitHub - Repository management
@@ -52,45 +82,70 @@ cd openclaw-config/bootstrap
 - PostgreSQL - Database access (Supabase)
 - Brave Search - Web search capabilities
 
-### Shell Aliases (42 Total)
+**Productivity Servers (NEW in v2.0):**
+- Google Calendar - Event management and scheduling
+- Email - IMAP/SMTP for reading and sending emails
+- Todoist - Task and project management
+- Slack - Team messaging and collaboration
+
+### Security Features (NEW in v2.0)
+- **Download Verification** - SHA256 checksums for all external downloads
+- **Secret Sanitization** - Automatic redaction of API keys, tokens, passwords in logs
+- **Credential Encryption** - AES-256-CBC encryption for sensitive config files
+- **Pre-commit Hook** - Prevents accidental commits of secrets
+- **Input Validation** - Strict validation of module names, URLs, file paths
+- **Secure Temp Files** - Uses `mktemp` instead of predictable paths
+- **Restrictive Permissions** - 0600/0700 for sensitive directories and files
+
+### Shell Aliases (42+ Total)
 - Deployment shortcuts (deploy-vercel, deploy-netlify, etc.)
 - File sharing (share-dropbox, share-gdrive)
 - Cloud sync (sync-dropbox, sync-gdrive, sync-s3)
 - MCP management (mcp-list, mcp-reload, mcp-logs)
+- Productivity helpers (productivity-setup, calendar-auth)
 
 ## 📁 Repository Structure
 
 ```
 openclaw-config/
 ├── README.md                    # This file
+├── INSTALLATION.md             # Detailed installation guide
+├── MIGRATION.md                # Migration guide for v1.x → v2.0
+├── SECURITY.md                 # Security policy and practices
 ├── bootstrap/                   # Bootstrap system
-│   ├── README.md               # Bootstrap documentation
-│   ├── bootstrap.sh            # Main installer
-│   ├── install.sh              # Remote installer
-│   ├── modules/                # Installation modules
+│   ├── bootstrap.sh            # Main installer (with interactive mode)
+│   ├── install.sh              # Secure installation script
+│   ├── manifest.yaml           # Module metadata (v2.0)
+│   ├── checksums.yaml          # Download verification checksums
+│   ├── modules/                # Installation modules (16 total)
 │   │   ├── 01-system-deps.sh
 │   │   ├── 02-python.sh
 │   │   ├── 03-nodejs.sh
 │   │   ├── 04-claude-cli.sh
-│   │   ├── 05-codex-cli.sh
-│   │   ├── 06-gemini-cli.sh
-│   │   ├── 07-openclaw-env.sh
-│   │   ├── 08-memory-init.sh
-│   │   ├── 09-claude-octopus.sh
-│   │   ├── 10-deployment-tools.sh
-│   │   └── 11-auto-updates.sh
+│   │   ├── ...
+│   │   ├── 14-security.sh
+│   │   └── 15-productivity-tools.sh  # NEW in v2.0
 │   └── lib/                    # Shared utilities
-│       ├── logger.sh
-│       ├── validation.sh
-│       └── network.sh
+│       ├── logger.sh           # With secret sanitization
+│       ├── validation.sh       # Enhanced input validation
+│       ├── network.sh
+│       ├── interactive.sh      # NEW: Interactive menus
+│       ├── dependency-resolver.sh  # NEW: Dependency resolution
+│       ├── secure-download.sh  # NEW: Download verification
+│       └── crypto.sh           # NEW: Credential encryption
 ├── deployment-tools/           # Deployment configuration
-│   ├── scripts/
-│   │   └── install-deployment-tools.sh
 │   ├── mcp/
-│   │   └── mcp-servers-extended.json
-│   ├── aliases/
-│   │   └── deployment-aliases.sh
+│   │   ├── mcp-servers-extended.json
+│   │   ├── mcp-servers-full-stack.json
+│   │   └── implementations/    # NEW: Custom MCP servers
+│   │       ├── google-calendar-mcp.js
+│   │       ├── email-mcp.js
+│   │       ├── todoist-mcp.js
+│   │       └── slack-mcp.js
+│   ├── config/
+│   │   └── productivity-credentials.template.env
 │   └── docs/
+│       └── PRODUCTIVITY_INTEGRATIONS.md  # NEW: 40-page guide
 │       ├── QUICK-START.md
 │       ├── openclaw-setup-plan.md
 │       └── EMBRACE-WORKFLOW-RESULTS.md
@@ -304,11 +359,22 @@ project-share              # Share project files
 
 ## 🔒 Security
 
-- No credentials stored in repository
+**Enhanced in v2.0:**
+- ✅ No `curl | bash` installation (security vulnerability eliminated)
+- ✅ SHA256 checksum verification for all downloads
+- ✅ Automatic secret sanitization in logs (15+ patterns)
+- ✅ AES-256-CBC credential encryption at rest
+- ✅ Pre-commit hook prevents accidental secret commits
+- ✅ Comprehensive input validation (injection prevention)
+- ✅ Restrictive file permissions (0600/0700 for sensitive files)
+- ✅ Secure temporary file handling with `mktemp`
+
+**Best Practices:**
 - API tokens via environment variables
-- Docker secrets support for production
+- App-specific passwords for email
 - 90-day token rotation recommended
 - Minimum privilege scopes enforced
+- See [SECURITY.md](SECURITY.md) for full security policy
 
 ## 📝 License
 
@@ -321,6 +387,45 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Bootstrap Docs**: [bootstrap/README.md](bootstrap/README.md)
 
 ## 📅 Changelog
+
+### v2.0.0 (2026-02-01)
+
+**🎯 Major Features:**
+- **Interactive Installation** - Beautiful TUI with preset selection (Minimal, Developer, Full, Custom)
+- **Productivity Integrations** - 4 new MCP servers: Google Calendar, Email, Todoist, Slack (30 tools total)
+- **Smart Dependencies** - Automatic dependency resolution with topological sort
+- **OpenClaw Optional** - No longer required; choose only what you need
+
+**🔒 Security Enhancements (20+ Fixes):**
+- Fixed all `curl | bash` vulnerabilities
+- SHA256 checksum verification for downloads
+- Secret sanitization in logs (API keys, tokens, passwords)
+- AES-256-CBC credential encryption
+- Pre-commit hook for secret detection
+- Comprehensive input validation
+- Secure temp directory handling
+
+**📦 New Components:**
+- `15-productivity-tools.sh` module
+- `lib/interactive.sh` - Interactive menu system
+- `lib/dependency-resolver.sh` - Graph-based dependency resolution
+- `lib/secure-download.sh` - Download verification
+- `lib/crypto.sh` - Credential encryption
+- 4 MCP server implementations
+- Comprehensive 40-page productivity guide
+
+**📝 Documentation:**
+- Updated installation instructions (no more `curl | bash`)
+- PRODUCTIVITY_INTEGRATIONS.md - Complete setup guide
+- Enhanced manifest.yaml with categories and sizes
+- MIGRATION.md for v1.x users
+- SECURITY.md policy document
+
+**⚠️ Breaking Changes:**
+- Default installation is now interactive (use `--non-interactive` for scripts)
+- OpenClaw no longer installed by default
+- Removed insecure `curl | bash` installation method
+- See [MIGRATION.md](MIGRATION.md) for upgrade instructions
 
 ### v1.2.0 (2026-02-01)
 - Added auto-update system (module 11)

@@ -37,12 +37,31 @@ validate_os() {
 validate_internet() {
     log_debug "Checking internet connectivity"
 
-    local test_hosts=("1.1.1.1" "8.8.8.8" "github.com")
+    # Try HTTP/HTTPS first (works in Docker containers)
+    local test_urls=("https://1.1.1.1" "https://www.google.com" "https://github.com")
 
+    for url in "${test_urls[@]}"; do
+        if command -v curl &>/dev/null; then
+            if curl -s --connect-timeout 3 --max-time 5 "$url" &>/dev/null; then
+                log_debug "Internet connectivity confirmed via $url (HTTP)"
+                return 0
+            fi
+        elif command -v wget &>/dev/null; then
+            if wget -q --timeout=5 --tries=1 --spider "$url" &>/dev/null; then
+                log_debug "Internet connectivity confirmed via $url (HTTP)"
+                return 0
+            fi
+        fi
+    done
+
+    # Fallback to ping if curl/wget not available
+    local test_hosts=("1.1.1.1" "8.8.8.8")
     for host in "${test_hosts[@]}"; do
-        if ping -c 1 -W 2 "$host" &>/dev/null; then
-            log_debug "Internet connectivity confirmed via $host"
-            return 0
+        if command -v ping &>/dev/null; then
+            if ping -c 1 -W 2 "$host" &>/dev/null; then
+                log_debug "Internet connectivity confirmed via $host (ping)"
+                return 0
+            fi
         fi
     done
 
@@ -237,6 +256,170 @@ validate_system() {
     fi
 }
 
+# Validate module name
+# Usage: validate_module_name module_name [available_modules_array]
+validate_module_name() {
+    local module="$1"
+    shift
+    local -a available_modules=("$@")
+
+    # Check if module name contains only allowed characters
+    if [[ ! "$module" =~ ^[a-zA-Z0-9_-]+$ ]]; then
+        log_error "Invalid module name: $module (only alphanumeric, hyphens, and underscores allowed)"
+        return 1
+    fi
+
+    # Check length (reasonable module name length)
+    if [[ ${#module} -gt 50 ]]; then
+        log_error "Module name too long: $module (max 50 characters)"
+        return 1
+    fi
+
+    # If available modules list provided, check if module exists
+    if [[ ${#available_modules[@]} -gt 0 ]]; then
+        local found=false
+        for available_module in "${available_modules[@]}"; do
+            if [[ "$module" == "$available_module" ]]; then
+                found=true
+                break
+            fi
+        done
+
+        if [[ "$found" != "true" ]]; then
+            log_error "Module not found: $module"
+            log_info "Available modules: ${available_modules[*]}"
+            return 1
+        fi
+    fi
+
+    log_debug "Module name validated: $module"
+    return 0
+}
+
+# Validate URL
+# Usage: validate_url url
+validate_url() {
+    local url="$1"
+
+    # Check if URL is empty
+    if [[ -z "$url" ]]; then
+        log_error "URL cannot be empty"
+        return 1
+    fi
+
+    # Only allow HTTPS URLs for security
+    if [[ ! "$url" =~ ^https:// ]]; then
+        log_error "URL must use HTTPS protocol: $url"
+        log_info "HTTP and other protocols are not allowed for security reasons"
+        return 1
+    fi
+
+    # Basic URL format validation
+    # Pattern: https://domain.tld/path (domain must have at least one dot)
+    if [[ ! "$url" =~ ^https://[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?)+(/[a-zA-Z0-9._~:/?#\[\]@!$&\'()*+,;=-]*)?$ ]]; then
+        log_error "Invalid URL format: $url"
+        return 1
+    fi
+
+    # Check URL length (prevent extremely long URLs)
+    if [[ ${#url} -gt 2048 ]]; then
+        log_error "URL too long: ${#url} characters (max 2048)"
+        return 1
+    fi
+
+    # Check for suspicious patterns
+    # Prevent URLs with @ (could be used for credential injection)
+    if [[ "$url" =~ @ ]] && [[ ! "$url" =~ ^https://[^@]+$ ]]; then
+        log_error "Suspicious URL pattern detected (contains @ in authority)"
+        return 1
+    fi
+
+    # Prevent URLs with unusual port numbers that might indicate attacks
+    if [[ "$url" =~ :([0-9]+)/ ]]; then
+        local port="${BASH_REMATCH[1]}"
+        # Only allow common HTTPS ports
+        if [[ "$port" != "443" && "$port" != "8443" ]]; then
+            log_warn "Non-standard HTTPS port detected: $port"
+            # Don't fail, just warn - some legitimate services use non-standard ports
+        fi
+    fi
+
+    log_debug "URL validated: $url"
+    return 0
+}
+
+# Validate file path (prevent directory traversal)
+# Usage: validate_path path
+validate_path() {
+    local path="$1"
+
+    # Check if path is empty
+    if [[ -z "$path" ]]; then
+        log_error "Path cannot be empty"
+        return 1
+    fi
+
+    # Prevent directory traversal attempts
+    if [[ "$path" =~ \.\. ]]; then
+        log_error "Invalid path: directory traversal detected (..) in: $path"
+        return 1
+    fi
+
+    # Prevent absolute paths to sensitive directories
+    local -a sensitive_dirs=(
+        "/etc/shadow"
+        "/etc/passwd"
+        "/root"
+        "/var/log/auth.log"
+        "/proc"
+        "/sys"
+    )
+
+    for sensitive_dir in "${sensitive_dirs[@]}"; do
+        if [[ "$path" == "$sensitive_dir"* ]]; then
+            log_error "Access to sensitive path denied: $path"
+            return 1
+        fi
+    done
+
+    log_debug "Path validated: $path"
+    return 0
+}
+
+# Validate environment variable name
+# Usage: validate_env_var_name name
+validate_env_var_name() {
+    local name="$1"
+
+    # Environment variable names must start with letter or underscore
+    # and contain only letters, numbers, and underscores
+    if [[ ! "$name" =~ ^[a-zA-Z_][a-zA-Z0-9_]*$ ]]; then
+        log_error "Invalid environment variable name: $name"
+        return 1
+    fi
+
+    # Prevent overwriting critical system variables
+    local -a protected_vars=(
+        "PATH"
+        "HOME"
+        "USER"
+        "SHELL"
+        "LOGNAME"
+        "LD_PRELOAD"
+        "LD_LIBRARY_PATH"
+    )
+
+    for protected_var in "${protected_vars[@]}"; do
+        if [[ "$name" == "$protected_var" ]]; then
+            log_error "Cannot modify protected environment variable: $name"
+            return 1
+        fi
+    done
+
+    log_debug "Environment variable name validated: $name"
+    return 0
+}
+
 # Export functions
 export -f validate_os
 export -f validate_internet
@@ -250,3 +433,7 @@ export -f validate_directory
 export -f validate_file
 export -f validate_version
 export -f validate_system
+export -f validate_module_name
+export -f validate_url
+export -f validate_path
+export -f validate_env_var_name
