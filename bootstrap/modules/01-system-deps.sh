@@ -55,6 +55,7 @@ install() {
     log_success "Package lists updated"
 
     # Install packages
+    # Note: python3.11-venv is required for Debian 12, python3-venv alone is insufficient
     local packages=(
         curl
         git
@@ -63,6 +64,7 @@ install() {
         python3-dev
         python3-pip
         python3-venv
+        python3.11-venv
         libssl-dev
         ca-certificates
         gnupg
