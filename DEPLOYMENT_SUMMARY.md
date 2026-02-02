@@ -1,7 +1,7 @@
 # 🎉 OpenClaw VM Configuration - Deployment Complete!
 
 **Status**: ✅ All tasks completed successfully
-**Repository**: https://github.com/nyldn/openclawd-config
+**Repository**: https://github.com/nyldn/openclaw-config
 **Release**: v1.1.0
 
 ---
@@ -15,7 +15,7 @@
 - Generated 5 production-ready artifacts
 
 ### ✅ Task 2: Files Copied to Repository
-- Moved all generated files to `/Users/chris/git/openclawd-config`
+- Moved all generated files to `/Users/chris/git/openclaw-config`
 - Organized in proper directory structure
 - Created deployment-tools directory with subdirectories
 
@@ -32,7 +32,7 @@
 - Updated changelog and feature lists
 
 ### ✅ Task 5: GitHub Repository Initialized
-- Created public repository at https://github.com/nyldn/openclawd-config
+- Created public repository at https://github.com/nyldn/openclaw-config
 - Pushed all 35 files (7,088+ lines of code)
 - Added 12 repository topics
 - Created v1.1.0 release tag
@@ -92,23 +92,23 @@
 ## 🌐 Important Links
 
 ### Repository
-- **Main**: https://github.com/nyldn/openclawd-config
-- **Releases**: https://github.com/nyldn/openclawd-config/releases
-- **Issues**: https://github.com/nyldn/openclawd-config/issues
-- **Wiki**: https://github.com/nyldn/openclawd-config/wiki (to be created)
+- **Main**: https://github.com/nyldn/openclaw-config
+- **Releases**: https://github.com/nyldn/openclaw-config/releases
+- **Issues**: https://github.com/nyldn/openclaw-config/issues
+- **Wiki**: https://github.com/nyldn/openclaw-config/wiki (to be created)
 
 ### Installation
 - **One-Line Install**:
   ```bash
-  curl -fsSL https://raw.githubusercontent.com/nyldn/openclawd-config/main/bootstrap/install.sh | bash
+  curl -fsSL https://raw.githubusercontent.com/nyldn/openclaw-config/main/bootstrap/install.sh | bash
   ```
 
 ### Documentation
-- **Root README**: https://github.com/nyldn/openclawd-config#readme
-- **Bootstrap README**: https://github.com/nyldn/openclawd-config/blob/main/bootstrap/README.md
-- **Quick Start**: https://github.com/nyldn/openclawd-config/blob/main/deployment-tools/docs/QUICK-START.md
-- **Setup Plan**: https://github.com/nyldn/openclawd-config/blob/main/deployment-tools/docs/openclaw-setup-plan.md
-- **Workflow Results**: https://github.com/nyldn/openclawd-config/blob/main/deployment-tools/docs/EMBRACE-WORKFLOW-RESULTS.md
+- **Root README**: https://github.com/nyldn/openclaw-config#readme
+- **Bootstrap README**: https://github.com/nyldn/openclaw-config/blob/main/bootstrap/README.md
+- **Quick Start**: https://github.com/nyldn/openclaw-config/blob/main/deployment-tools/docs/QUICK-START.md
+- **Setup Plan**: https://github.com/nyldn/openclaw-config/blob/main/deployment-tools/docs/openclaw-setup-plan.md
+- **Workflow Results**: https://github.com/nyldn/openclaw-config/blob/main/deployment-tools/docs/EMBRACE-WORKFLOW-RESULTS.md
 
 ---
 
@@ -141,7 +141,7 @@
 ### 1. Test Local Installation (Optional)
 
 ```bash
-cd /Users/chris/git/openclawd-config/bootstrap
+cd /Users/chris/git/openclaw-config/bootstrap
 ./bootstrap.sh --dry-run
 ```
 
@@ -153,7 +153,7 @@ cd /Users/chris/git/openclawd-config/bootstrap
 ssh user@your-vm-ip
 
 # Run one-line installer
-curl -fsSL https://raw.githubusercontent.com/nyldn/openclawd-config/main/bootstrap/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/nyldn/openclaw-config/main/bootstrap/install.sh | bash
 ```
 
 #### Option B: Local Installation on VM
@@ -162,8 +162,8 @@ curl -fsSL https://raw.githubusercontent.com/nyldn/openclawd-config/main/bootstr
 ssh user@your-vm-ip
 
 # Clone repository
-git clone https://github.com/nyldn/openclawd-config.git
-cd openclawd-config/bootstrap
+git clone https://github.com/nyldn/openclaw-config.git
+cd openclaw-config/bootstrap
 
 # Run bootstrap
 ./bootstrap.sh
@@ -189,7 +189,7 @@ export GITHUB_PAT="ghp_your_token"
 export SUPABASE_DB_URL="postgresql://connection_string"
 
 # Test installation
-cd ~/openclawd-config/bootstrap
+cd ~/openclaw-config/bootstrap
 ./bootstrap.sh --validate
 ```
 
@@ -412,7 +412,7 @@ npm install -g railway --silent
 Need help? Here's how to get support:
 
 1. **Check Documentation**: Start with README.md and QUICK-START.md
-2. **GitHub Issues**: https://github.com/nyldn/openclawd-config/issues
+2. **GitHub Issues**: https://github.com/nyldn/openclaw-config/issues
 3. **Troubleshooting**: See bootstrap/README.md troubleshooting section
 4. **Community**: Create GitHub Discussions (coming soon)
 
@@ -422,7 +422,7 @@ Need help? Here's how to get support:
 
 **Next Step**: Deploy to your OpenClaw VM using the one-line installer above.
 
-**Repository**: https://github.com/nyldn/openclawd-config
+**Repository**: https://github.com/nyldn/openclaw-config
 
 ---
 

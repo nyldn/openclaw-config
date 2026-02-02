@@ -296,14 +296,14 @@ update_mcp_servers() {
     return 0
 }
 
-# Update openclawd-config repository
+# Update openclaw-config repository
 update_openclawd_config() {
-    log_info "Checking openclawd-config repository for updates..."
+    log_info "Checking openclaw-config repository for updates..."
 
-    local repo_dir="$HOME/openclawd-config"
+    local repo_dir="$HOME/openclaw-config"
 
     if [[ ! -d "$repo_dir/.git" ]]; then
-        log_warn "openclawd-config repository not found: $repo_dir"
+        log_warn "openclaw-config repository not found: $repo_dir"
         return 0
     fi
 
@@ -325,7 +325,7 @@ update_openclawd_config() {
         remote_commit=$(git rev-parse origin/main)
 
         if [[ "$local_commit" != "$remote_commit" ]]; then
-            log_info "Updates available for openclawd-config"
+            log_info "Updates available for openclaw-config"
             log_info "Local: ${local_commit:0:7}, Remote: ${remote_commit:0:7}"
 
             # Check for local changes
@@ -338,7 +338,7 @@ update_openclawd_config() {
             # Pull updates
             log_info "Pulling updates..."
             if git pull origin main 2>&1 | tee -a "$LOG_FILE"; then
-                log_success "openclawd-config updated"
+                log_success "openclaw-config updated"
 
                 # Re-run bootstrap if needed
                 log_info "Consider running bootstrap to apply updates: cd $repo_dir/bootstrap && ./bootstrap.sh"
@@ -347,7 +347,7 @@ update_openclawd_config() {
                 return 1
             fi
         else
-            log_info "openclawd-config is up-to-date"
+            log_info "openclaw-config is up-to-date"
         fi
     )
 
@@ -470,7 +470,7 @@ main() {
     update_mcp_servers || log_warn "MCP servers update had issues"
     echo ""
 
-    update_openclawd_config || log_warn "openclawd-config update had issues"
+    update_openclawd_config || log_warn "openclaw-config update had issues"
     echo ""
 
     cleanup_packages || log_warn "Package cleanup had issues"

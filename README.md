@@ -7,14 +7,14 @@ Automated configuration and deployment system for OpenClaw VMs with comprehensiv
 ### Remote Installation (One-Line)
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/nyldn/openclawd-config/main/bootstrap/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/nyldn/openclaw-config/main/bootstrap/install.sh | bash
 ```
 
 ### Local Installation
 
 ```bash
-git clone https://github.com/nyldn/openclawd-config.git
-cd openclawd-config/bootstrap
+git clone https://github.com/nyldn/openclaw-config.git
+cd openclaw-config/bootstrap
 ./bootstrap.sh
 ```
 
@@ -61,7 +61,7 @@ cd openclawd-config/bootstrap
 ## 📁 Repository Structure
 
 ```
-openclawd-config/
+openclaw-config/
 ├── README.md                    # This file
 ├── bootstrap/                   # Bootstrap system
 │   ├── README.md               # Bootstrap documentation
@@ -221,13 +221,13 @@ openclawd-config/
 
 ### Single VM
 ```bash
-ssh user@vm-host 'curl -fsSL https://raw.githubusercontent.com/nyldn/openclawd-config/main/bootstrap/install.sh | bash'
+ssh user@vm-host 'curl -fsSL https://raw.githubusercontent.com/nyldn/openclaw-config/main/bootstrap/install.sh | bash'
 ```
 
 ### Multiple VMs
 ```bash
 for host in vm1 vm2 vm3; do
-    ssh user@$host 'curl -fsSL https://raw.githubusercontent.com/nyldn/openclawd-config/main/bootstrap/install.sh | bash'
+    ssh user@$host 'curl -fsSL https://raw.githubusercontent.com/nyldn/openclaw-config/main/bootstrap/install.sh | bash'
 done
 ```
 
@@ -294,16 +294,6 @@ project-share              # Share project files
 4. Test with `./bootstrap.sh --module your-module`
 5. Submit a pull request
 
-## 📊 Comparison: Before vs After
-
-| Feature | Before | After | Change |
-|---------|--------|-------|--------|
-| MCP Servers | 0 | 6 | +6 (new) |
-| CLI Tools | 3 | 6 | +3 (+100%) |
-| Shell Aliases | 14 | 42 | +28 (+200%) |
-| Deployment Platforms | 0 | 3 | +3 (new) |
-| Cloud Storage | 0 | 2 | +2 (new) |
-
 ## 🎉 Success Metrics
 
 - **Setup Time**: ~5 minutes
@@ -322,12 +312,12 @@ project-share              # Share project files
 
 ## 📝 License
 
-(Add your license here)
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## 🆘 Support
 
-- **Issues**: https://github.com/nyldn/openclawd-config/issues
-- **Documentation**: https://github.com/nyldn/openclawd-config/wiki
+- **Issues**: https://github.com/nyldn/openclaw-config/issues
+- **Documentation**: https://github.com/nyldn/openclaw-config/wiki
 - **Bootstrap Docs**: [bootstrap/README.md](bootstrap/README.md)
 
 ## 📅 Changelog

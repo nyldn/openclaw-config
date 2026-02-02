@@ -5,7 +5,7 @@
 ### Step 1: Create GitHub Repository
 
 1. Go to https://github.com/new
-2. Repository name: `openclawd-config`
+2. Repository name: `openclaw-config`
 3. Description: `Automated configuration and deployment system for OpenClaw VMs with AI tools, deployment platforms, and file sharing`
 4. **Public** or **Private** (your choice)
 5. **Do NOT** initialize with README, .gitignore, or license (we already have these)
@@ -15,13 +15,13 @@
 
 ```bash
 # Navigate to the repository
-cd /Users/chris/git/openclawd-config
+cd /Users/chris/git/openclaw-config
 
 # Add GitHub remote (replace YOUR_USERNAME with your GitHub username)
-git remote add origin https://github.com/YOUR_USERNAME/openclawd-config.git
+git remote add origin https://github.com/YOUR_USERNAME/openclaw-config.git
 
 # Or use SSH (if you have SSH keys configured):
-git remote add origin git@github.com:YOUR_USERNAME/openclawd-config.git
+git remote add origin git@github.com:YOUR_USERNAME/openclaw-config.git
 
 # Verify remote
 git remote -v
@@ -34,7 +34,7 @@ git remote -v
 git push -u origin main
 
 # Verify on GitHub
-# Visit: https://github.com/YOUR_USERNAME/openclawd-config
+# Visit: https://github.com/YOUR_USERNAME/openclaw-config
 ```
 
 ## 📝 After Pushing
@@ -63,7 +63,7 @@ USERNAME="your-actual-username"
 sed -i.bak "s/YOUR_USERNAME/$USERNAME/g" README.md
 
 # Update bootstrap/README.md
-sed -i.bak "s/user\/openclawd-config/$USERNAME\/openclawd-config/g" bootstrap/README.md
+sed -i.bak "s/user\/openclaw-config/$USERNAME\/openclaw-config/g" bootstrap/README.md
 
 # Remove backup files
 rm -f README.md.bak bootstrap/README.md.bak
@@ -82,7 +82,7 @@ git tag -a v1.1.0 -m "Release v1.1.0 - Deployment Tools and Extended MCP Servers
 git push origin v1.1.0
 
 # Create a release on GitHub
-# Go to: https://github.com/YOUR_USERNAME/openclawd-config/releases/new
+# Go to: https://github.com/YOUR_USERNAME/openclaw-config/releases/new
 # Tag: v1.1.0
 # Title: "v1.1.0 - Deployment Tools and Extended MCP Servers"
 # Description: (copy from changelog in README.md)
@@ -135,7 +135,7 @@ Once pushed, test the remote installation:
 
 ```bash
 # In a test VM or new directory
-curl -fsSL https://raw.githubusercontent.com/YOUR_USERNAME/openclawd-config/main/bootstrap/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/YOUR_USERNAME/openclaw-config/main/bootstrap/install.sh | bash
 ```
 
 ## 🔒 Security Notes
@@ -177,12 +177,12 @@ After setting up:
 
 1. Share the installation URL:
    ```
-   curl -fsSL https://raw.githubusercontent.com/YOUR_USERNAME/openclawd-config/main/bootstrap/install.sh | bash
+   curl -fsSL https://raw.githubusercontent.com/YOUR_USERNAME/openclaw-config/main/bootstrap/install.sh | bash
    ```
 
 2. Share the repository:
    ```
-   https://github.com/YOUR_USERNAME/openclawd-config
+   https://github.com/YOUR_USERNAME/openclaw-config
    ```
 
 3. Add to your profile README

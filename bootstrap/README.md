@@ -9,15 +9,15 @@ Automated installation system for Debian VMs that sets up Claude CLI, OpenAI Cod
 From any Debian-based system:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/nyldn/openclawd-config/main/bootstrap/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/nyldn/openclaw-config/main/bootstrap/install.sh | bash
 ```
 
 ### Local Installation
 
 ```bash
 # Clone repository
-git clone https://github.com/nyldn/openclawd-config.git
-cd openclawd-config/bootstrap
+git clone https://github.com/nyldn/openclaw-config.git
+cd openclaw-config/bootstrap
 
 # Run bootstrap
 ./bootstrap.sh
@@ -480,8 +480,8 @@ To add new modules or improve existing ones:
 
 ## Support
 
-- GitHub Issues: https://github.com/nyldn/openclawd-config/issues
-- Documentation: https://github.com/nyldn/openclawd-config/wiki
+- GitHub Issues: https://github.com/nyldn/openclaw-config/issues
+- Documentation: https://github.com/nyldn/openclaw-config/wiki
 
 ## Changelog
 
