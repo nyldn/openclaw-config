@@ -337,6 +337,9 @@ install_module() {
 
     log_section "Installing Module: $module"
 
+    # Debug: Print working directory before module installation
+    log_debug "Working directory before $module: $(pwd)"
+
     # Make module executable
     chmod +x "$module_file"
 
@@ -370,6 +373,9 @@ install_module() {
     if bash "$module_file" install; then
         log_success "Module installed: $module v$version"
 
+        # Debug: Print working directory after module installation
+        log_debug "Working directory after $module: $(pwd)"
+
         # Update state
         update_state "$module" "$version"
 
@@ -381,9 +387,13 @@ install_module() {
             return 1
         fi
 
+        # Debug: Print working directory after validation
+        log_debug "Working directory after validation: $(pwd)"
+
         return 0
     else
         log_error "Module installation failed: $module"
+        log_debug "Working directory after failure: $(pwd)"
         return 1
     fi
 }
@@ -588,6 +598,11 @@ main() {
     logger_init "$SCRIPT_DIR/logs"
 
     log_section "OpenClaw Bootstrap v$BOOTSTRAP_VERSION"
+
+    # Debug: Print working directory
+    log_debug "Initial working directory: $(pwd)"
+    log_debug "SCRIPT_DIR: $SCRIPT_DIR"
+    log_debug "MODULES_DIR: $MODULES_DIR"
 
     # Initialize state
     init_state

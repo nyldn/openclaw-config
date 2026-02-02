@@ -25,6 +25,10 @@ WORKDIR /home/testuser
 # Copy the local repository
 COPY --chown=testuser:testuser . /home/testuser/openclaw-config
 
+# Verify the structure
+RUN ls -la /home/testuser/openclaw-config/ && \
+    ls -la /home/testuser/openclaw-config/bootstrap/ || echo "Bootstrap directory not found"
+
 # Set up a welcome message
 RUN echo 'echo ""' >> ~/.bashrc && \
     echo 'echo "╔════════════════════════════════════════════════════════════╗"' >> ~/.bashrc && \
@@ -43,6 +47,9 @@ RUN echo 'echo ""' >> ~/.bashrc && \
     echo 'echo "  --only system-deps,python      # Install specific modules"' >> ~/.bashrc && \
     echo 'echo "  --list-modules                 # List all available modules"' >> ~/.bashrc && \
     echo 'echo "  --dry-run                      # Preview without installing"' >> ~/.bashrc && \
+    echo 'echo ""' >> ~/.bashrc && \
+    echo 'echo "🐛 Debug mode enabled automatically for testing"' >> ~/.bashrc && \
+    echo 'export VERBOSE=true' >> ~/.bashrc && \
     echo 'echo ""' >> ~/.bashrc
 
 # Set working directory

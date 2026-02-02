@@ -95,6 +95,35 @@ install() {
             # Execute installer
             if bash "$claude_installer"; then
                 log_success "Claude CLI installed"
+
+                # Source shell profile to update PATH
+                log_progress "Updating PATH for Claude CLI"
+                if [[ -f "$HOME/.bashrc" ]]; then
+                    # shellcheck source=/dev/null
+                    source "$HOME/.bashrc" 2>/dev/null || true
+                fi
+                if [[ -f "$HOME/.profile" ]]; then
+                    # shellcheck source=/dev/null
+                    source "$HOME/.profile" 2>/dev/null || true
+                fi
+
+                # Also try common Claude CLI installation locations
+                for claude_path in \
+                    "$HOME/.local/bin/claude" \
+                    "$HOME/bin/claude" \
+                    "/usr/local/bin/claude" \
+                    "$HOME/.claude/bin/claude"; do
+                    if [[ -x "$claude_path" ]]; then
+                        log_success "Found Claude CLI at: $claude_path"
+                        # Add to PATH if not already there
+                        claude_dir=$(dirname "$claude_path")
+                        if [[ ":$PATH:" != *":$claude_dir:"* ]]; then
+                            export PATH="$claude_dir:$PATH"
+                            log_info "Added $claude_dir to PATH"
+                        fi
+                        break
+                    fi
+                done
             else
                 log_error "Failed to install Claude CLI"
                 log_info "Please install manually from: https://claude.ai/download"
