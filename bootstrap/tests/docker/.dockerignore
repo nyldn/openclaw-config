@@ -1,0 +1,15 @@
+# Ignore test results and logs
+results/
+*.log
+
+# Ignore git history
+.git/
+.gitignore
+
+# Ignore other test directories
+../staging/
+../mock/
+
+# Ignore documentation that's not needed in container
+*.md
+!README.md

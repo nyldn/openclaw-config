@@ -1,0 +1,100 @@
+services:
+  # Full installation test
+  test-full:
+    build: .
+    command: >
+      bash -c "
+        cd /home/testuser/openclaw-config/bootstrap &&
+        ./bootstrap.sh --non-interactive --verbose 2>&1 | tee /tmp/bootstrap-full.log &&
+        ./bootstrap.sh --validate
+      "
+    volumes:
+      - ../../../:/home/testuser/openclaw-config
+    tmpfs:
+      - /tmp
+      - /var/tmp
+    read_only: false
+
+  # Dry-run test (no actual installation)
+  test-dry-run:
+    build: .
+    command: >
+      bash -c "
+        cd /home/testuser/openclaw-config/bootstrap &&
+        ./bootstrap.sh --dry-run --verbose 2>&1 | tee /tmp/bootstrap-dry-run.log
+      "
+    volumes:
+      - ../../../:/home/testuser/openclaw-config
+    tmpfs:
+      - /tmp
+      - /var/tmp
+    read_only: false
+
+  # Idempotency test (run twice to ensure no errors)
+  test-idempotency:
+    build: .
+    command: >
+      bash -c "
+        cd /home/testuser/openclaw-config/bootstrap &&
+        echo '=== First Run ===' &&
+        ./bootstrap.sh --non-interactive 2>&1 | tee /tmp/bootstrap-run1.log &&
+        echo '' &&
+        echo '=== Second Run ===' &&
+        ./bootstrap.sh --non-interactive 2>&1 | tee /tmp/bootstrap-run2.log &&
+        echo '' &&
+        echo '=== Validation ===' &&
+        ./bootstrap.sh --validate
+      "
+    volumes:
+      - ../../../:/home/testuser/openclaw-config
+    tmpfs:
+      - /tmp
+      - /var/tmp
+    read_only: false
+
+  # Individual module test - system-deps
+  test-module-system-deps:
+    build: .
+    command: >
+      bash -c "
+        cd /home/testuser/openclaw-config/bootstrap &&
+        ./bootstrap.sh --only system-deps --non-interactive --verbose &&
+        ./bootstrap.sh --validate
+      "
+    volumes:
+      - ../../../:/home/testuser/openclaw-config
+    tmpfs:
+      - /tmp
+      - /var/tmp
+    read_only: false
+
+  # Individual module test - python
+  test-module-python:
+    build: .
+    command: >
+      bash -c "
+        cd /home/testuser/openclaw-config/bootstrap &&
+        ./bootstrap.sh --only system-deps,python --non-interactive --verbose &&
+        ./bootstrap.sh --validate
+      "
+    volumes:
+      - ../../../:/home/testuser/openclaw-config
+    tmpfs:
+      - /tmp
+      - /var/tmp
+    read_only: false
+
+  # Validation-only test (check if --validate works without installation)
+  test-validation-only:
+    build: .
+    command: >
+      bash -c "
+        cd /home/testuser/openclaw-config/bootstrap &&
+        ./bootstrap.sh --validate 2>&1 || echo 'Validation failed as expected (nothing installed)'
+      "
+    volumes:
+      - ../../../:/home/testuser/openclaw-config
+    tmpfs:
+      - /tmp
+      - /var/tmp
+    read_only: false

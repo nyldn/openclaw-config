@@ -1,0 +1,31 @@
+# OpenClaw v2.0 Installation Test
+# Tests the bootstrap installation in a clean Debian environment
+
+FROM debian:12-slim
+
+# Set environment to non-interactive
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install minimal prerequisites
+RUN apt-get update && apt-get install -y \
+    git \
+    curl \
+    sudo \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create a test user (not root)
+RUN useradd -m -s /bin/bash testuser && \
+    echo "testuser ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+
+# Switch to test user
+USER testuser
+WORKDIR /home/testuser
+
+# Copy the local repository (simulating fresh install)
+COPY --chown=testuser:testuser . /home/testuser/openclaw-config
+
+# Set working directory
+WORKDIR /home/testuser/openclaw-config/bootstrap
+
+# Run the installation test script
+CMD ["/bin/bash", "-c", "./bootstrap.sh --non-interactive --only system-deps,python,nodejs --validate && echo '=== Installation Test PASSED ===' || echo '=== Installation Test FAILED ==='"]
