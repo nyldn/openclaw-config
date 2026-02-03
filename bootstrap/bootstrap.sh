@@ -30,6 +30,8 @@ MODULES_DIR="$SCRIPT_DIR/modules"
 CONFIG_DIR="$SCRIPT_DIR/config"
 MANIFEST_FILE="$SCRIPT_DIR/manifest.yaml"
 DEFAULT_MANIFEST_URL="https://raw.githubusercontent.com/nyldn/openclaw-config/main/bootstrap/manifest.yaml"
+BOOTSTRAP_RUN_ID=""
+MODULE_LOG_DIR=""
 
 # Command-line options
 VERBOSE=false
@@ -256,9 +258,9 @@ get_installed_modules() {
 
     # Extract module names under the "modules:" section
     awk '
-        $1 == "modules:" { in=1; next }
-        in && $0 ~ /^  [a-zA-Z0-9_-]+:/ { gsub(":", "", $1); print $1 }
-        in && $0 ~ /^[^ ]/ { in=0 }
+        $1 == "modules:" { in_modules=1; next }
+        in_modules && $0 ~ /^  [a-zA-Z0-9_-]+:/ { gsub(":", "", $1); print $1 }
+        in_modules && $0 ~ /^[^ ]/ { in_modules=0 }
     ' "$STATE_FILE"
 }
 
@@ -340,6 +342,7 @@ should_install_module() {
 install_module() {
     local module="$1"
     local module_file="$MODULES_DIR/${module}.sh"
+    local module_log="$MODULE_LOG_DIR/${module}.log"
 
     # Find module file (may have number prefix)
     if [[ ! -f "$module_file" ]]; then
@@ -383,15 +386,24 @@ install_module() {
 
     # Track module start time
     summary_module_start "$module"
+    summary_module_log "$module" "$module_log"
+
+    {
+        echo "== OpenClaw module: $module =="
+        echo "Started: $(date)"
+        echo "Module file: $module_file"
+        echo ""
+    } >> "$module_log"
 
     # Run installation
     if [[ "$DRY_RUN" == "true" ]]; then
         log_info "[DRY RUN] Would install module: $module v$version"
         summary_module_success "$module"
+        echo "[DRY RUN] No changes applied" >> "$module_log"
         return 0
     fi
 
-    if bash "$module_file" install; then
+    if bash "$module_file" install 2>&1 | tee -a "$module_log"; then
         log_success "Module installed: $module v$version"
 
         # Debug: Print working directory after module installation
@@ -401,12 +413,13 @@ install_module() {
         update_state "$module" "$version"
 
         # Run validation
-        if bash "$module_file" validate; then
+        if bash "$module_file" validate 2>&1 | tee -a "$module_log"; then
             log_success "Module validation passed: $module"
             summary_module_success "$module"
         else
             log_warn "Module validation failed: $module"
             summary_module_failed "$module"
+            echo "Validation failed for module: $module" >> "$module_log"
             return 1
         fi
 
@@ -418,6 +431,7 @@ install_module() {
         log_error "Module installation failed: $module"
         log_debug "Working directory after failure: $(pwd)"
         summary_module_failed "$module"
+        echo "Installation failed for module: $module" >> "$module_log"
         return 1
     fi
 }
@@ -563,6 +577,7 @@ run_interactive_mode() {
     fi
 
     log_info "Selected preset: $preset"
+    summary_set_preset "$preset"
 
     # Get modules based on preset
     local selected_modules_str=""
@@ -626,13 +641,25 @@ run_interactive_mode() {
     return 0
 }
 
+# Handle interrupts and termination
+on_interrupt() {
+    local signal="$1"
+    log_warn "Installation interrupted ($signal)"
+    summary_set_interrupted "$signal"
+    summary_show
+    exit 130
+}
+
 # Main installation flow
 main() {
     # Parse arguments
     parse_args "$@"
 
     # Initialize logging
+    BOOTSTRAP_RUN_ID=$(date +%Y%m%d-%H%M%S)
     logger_init "$SCRIPT_DIR/logs"
+    MODULE_LOG_DIR="$SCRIPT_DIR/logs/modules/$BOOTSTRAP_RUN_ID"
+    mkdir -p "$MODULE_LOG_DIR"
 
     log_section "OpenClaw Bootstrap v$BOOTSTRAP_VERSION"
 
@@ -646,6 +673,14 @@ main() {
 
     # Initialize summary tracking
     summary_init
+
+    # Trap interrupts for partial summary
+    trap 'on_interrupt SIGINT' INT
+    trap 'on_interrupt SIGTERM' TERM
+
+    if [[ "$NON_INTERACTIVE" == "true" ]]; then
+        summary_set_preset "non-interactive"
+    fi
 
     # Handle validation-only mode
     if [[ "$VALIDATE_ONLY" == "true" ]]; then
@@ -713,6 +748,8 @@ main() {
         # Use SELECTED_MODULES as the modules array
         modules=("${SELECTED_MODULES[@]}")
     fi
+
+    summary_set_selected_modules "${modules[@]}"
 
     # Install modules
     local failed_modules=()

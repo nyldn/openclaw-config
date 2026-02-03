@@ -43,7 +43,7 @@ For automated installations (CI/CD, scripts):
 ./bootstrap.sh --only system-deps,nodejs,python
 ```
 
-See [INSTALLATION.md](INSTALLATION.md) for detailed installation options and customization.
+See [docs/INSTALLATION.md](docs/INSTALLATION.md) for detailed installation options and customization.
 
 **Security Note:** We no longer support `curl | bash` installation methods as they pose security risks. Always clone the repository first to review the code before execution.
 
@@ -52,7 +52,7 @@ See [INSTALLATION.md](INSTALLATION.md) for detailed installation options and cus
 ### Core AI Tools
 - **Claude Code CLI** - Anthropic's Claude assistant
 - **OpenAI CLI** - GPT-4 and GPT-3.5 access
-- **Gemini CLI** - Google's Gemini models
+- **Gemini CLI** - Run via `npx @google/gemini-cli` (see https://github.com/google-gemini/gemini-cli)
 - **Claude Octopus** - Multi-AI orchestration system
 
 ### Deployment Platforms
@@ -109,9 +109,9 @@ See [INSTALLATION.md](INSTALLATION.md) for detailed installation options and cus
 ```
 openclaw-config/
 ├── README.md                    # This file
-├── INSTALLATION.md             # Detailed installation guide
-├── MIGRATION.md                # Migration guide for v1.x → v2.0
-├── SECURITY.md                 # Security policy and practices
+├── docs/INSTALLATION.md        # Detailed installation guide
+├── docs/guides/MIGRATION.md    # Migration guide for v1.x → v2.0
+├── docs/guides/SECURITY.md     # Security policy and practices
 ├── bootstrap/                   # Bootstrap system
 │   ├── bootstrap.sh            # Main installer (with interactive mode)
 │   ├── install.sh              # Secure installation script
@@ -374,7 +374,7 @@ project-share              # Share project files
 - App-specific passwords for email
 - 90-day token rotation recommended
 - Minimum privilege scopes enforced
-- See [SECURITY.md](SECURITY.md) for full security policy
+- See [docs/guides/SECURITY.md](docs/guides/SECURITY.md) for full security policy
 
 ## 📝 License
 
@@ -418,14 +418,14 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - Updated installation instructions (no more `curl | bash`)
 - PRODUCTIVITY_INTEGRATIONS.md - Complete setup guide
 - Enhanced manifest.yaml with categories and sizes
-- MIGRATION.md for v1.x users
-- SECURITY.md policy document
+- docs/guides/MIGRATION.md for v1.x users
+- docs/guides/SECURITY.md policy document
 
 **⚠️ Breaking Changes:**
 - Default installation is now interactive (use `--non-interactive` for scripts)
 - OpenClaw no longer installed by default
 - Removed insecure `curl | bash` installation method
-- See [MIGRATION.md](MIGRATION.md) for upgrade instructions
+- See [docs/guides/MIGRATION.md](docs/guides/MIGRATION.md) for upgrade instructions
 
 ### v1.2.0 (2026-02-01)
 - Added auto-update system (module 11)

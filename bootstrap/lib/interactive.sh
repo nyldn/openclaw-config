@@ -54,17 +54,21 @@ show_welcome_screen() {
 # Outputs:
 #   Selected preset name (minimal, developer, full, custom)
 #
-show_preset_menu() {
+print_preset_menu() {
     local message="Choose an installation preset:"
 
-    echo "${message}"
-    echo ""
-    echo "1) Minimal   - System deps, Python, Node.js"
-    echo "2) Developer - Minimal + AI CLIs + Dev tools"
-    echo "3) Full      - Everything"
-    echo "4) Custom    - Select modules"
-    echo "Q) Quit"
-    echo ""
+    echo "${message}" >&2
+    echo "" >&2
+    echo "1) Minimal   - System deps, Python, Node.js" >&2
+    echo "2) Developer - Minimal + AI CLIs + Dev tools" >&2
+    echo "3) Full      - Everything" >&2
+    echo "4) Custom    - Select modules" >&2
+    echo "Q) Quit" >&2
+    echo "" >&2
+}
+
+show_preset_menu() {
+    print_preset_menu
 
     while true; do
         local choice
@@ -77,7 +81,10 @@ show_preset_menu() {
             3|full|f) echo "full"; return 0 ;;
             4|custom|c) echo "custom"; return 0 ;;
             q|quit) return 1 ;;
-            *) echo "Invalid choice. Enter 1-4 or Q." ;;
+            *)
+                echo "Invalid choice. Enter 1-4 or Q." >&2
+                print_preset_menu
+                ;;
         esac
     done
 }
@@ -95,26 +102,30 @@ show_module_menu() {
     local -a available_modules=("$@")
     local count=${#available_modules[@]}
 
-    echo ""
-    echo "Custom module selection"
-    echo "Enter numbers or names separated by spaces or commas."
-    echo "Examples: 1 2 5   or   python,nodejs,dev-tools"
-    echo "Type 'all' for everything, or 'q' to cancel."
-    echo ""
+    print_module_menu() {
+        echo "" >&2
+        echo "Custom module selection" >&2
+        echo "Enter numbers or names separated by spaces or commas." >&2
+        echo "Examples: 1 2 5   or   python,nodejs,dev-tools" >&2
+        echo "Type 'all' for everything, or 'q' to cancel." >&2
+        echo "" >&2
 
-    local i=1
-    for module in "${available_modules[@]}"; do
-        local description
-        description=$(get_module_description "$module")
-        if [[ "$module" == "system-deps" ]]; then
-            printf "%2d) %-18s - %s (required)\n" "$i" "$module" "$description"
-        else
-            printf "%2d) %-18s - %s\n" "$i" "$module" "$description"
-        fi
-        i=$((i + 1))
-    done
+        local i=1
+        for module in "${available_modules[@]}"; do
+            local description
+            description=$(get_module_description "$module")
+            if [[ "$module" == "system-deps" ]]; then
+                printf "%2d) %-18s - %s (required)\n" "$i" "$module" "$description" >&2
+            else
+                printf "%2d) %-18s - %s\n" "$i" "$module" "$description" >&2
+            fi
+            i=$((i + 1))
+        done
 
-    echo ""
+        echo "" >&2
+    }
+
+    print_module_menu
 
     while true; do
         local input
@@ -122,7 +133,7 @@ show_module_menu() {
         input="$(echo "${input}" | tr ',' ' ')"
 
         if [[ -z "$input" ]]; then
-            echo "Please select at least one module."
+            echo "Please select at least one module." >&2
             continue
         fi
 
@@ -144,7 +155,7 @@ show_module_menu() {
 
             if [[ "$item" =~ ^[0-9]+$ ]]; then
                 if (( item < 1 || item > count )); then
-                    echo "Invalid index: $item"
+                    echo "Invalid index: $item" >&2
                     valid=false
                     break
                 fi
@@ -154,7 +165,7 @@ show_module_menu() {
                 fi
             else
                 if ! array_contains "$item" "${available_modules[@]}"; then
-                    echo "Unknown module: $item"
+                    echo "Unknown module: $item" >&2
                     valid=false
                     break
                 fi
@@ -165,7 +176,8 @@ show_module_menu() {
         done
 
         if [[ "$valid" != "true" ]]; then
-            echo "Try again."
+            echo "Try again." >&2
+            print_module_menu
             continue
         fi
 
@@ -183,7 +195,8 @@ show_module_menu() {
         done
 
         if [[ ${#ordered[@]} -eq 0 ]]; then
-            echo "No modules selected."
+            echo "No modules selected." >&2
+            print_module_menu
             continue
         fi
 
