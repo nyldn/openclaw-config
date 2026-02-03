@@ -19,15 +19,58 @@ source "$LIB_DIR/validation.sh"
 
 VENV_DIR="$HOME/.local/venv/openclaw"
 CONFIG_DIR="$HOME/.config/claude"
+CLAUDE_INSTALL_URL="https://claude.ai/install.sh"
+
+ensure_claude_path() {
+    local -a candidates=(
+        "$HOME/.claude/bin/claude"
+        "$HOME/.local/bin/claude"
+        "/usr/local/bin/claude"
+        "/opt/homebrew/bin/claude"
+    )
+
+    local candidate
+    for candidate in "${candidates[@]}"; do
+        if [[ -x "$candidate" ]]; then
+            local claude_dir
+            claude_dir=$(dirname "$candidate")
+
+            if [[ ":$PATH:" != *":$claude_dir:"* ]]; then
+                export PATH="$claude_dir:$PATH"
+            fi
+
+            local shell_rc="$HOME/.bashrc"
+            if [[ -f "$HOME/.zshrc" ]]; then
+                shell_rc="$HOME/.zshrc"
+            fi
+
+            if ! grep -q "openclaw-claude-path" "$shell_rc" 2>/dev/null; then
+                {
+                    echo ""
+                    echo "# openclaw-claude-path"
+                    echo "export PATH=\"$claude_dir:\$PATH\""
+                } >> "$shell_rc"
+            fi
+
+            log_success "Found Claude CLI at: $candidate"
+            return 0
+        fi
+    done
+
+    return 1
+}
 
 # Check if module is already installed
 check_installed() {
     log_debug "Checking if $MODULE_NAME is installed"
 
     # Check if Claude CLI is installed
+    export PATH="$HOME/.local/bin:$HOME/.claude/bin:/usr/local/bin:/opt/homebrew/bin:$PATH"
     if ! validate_command "claude"; then
-        log_debug "Claude CLI not found"
-        return 1
+        if ! ensure_claude_path; then
+            log_debug "Claude CLI not found"
+            return 1
+        fi
     fi
 
     # Check if Anthropic SDK is installed in venv
@@ -56,87 +99,61 @@ install() {
     log_success "Config directory created"
 
     # Install Claude Code CLI
-    # Note: Installation method may vary - check official docs
     log_progress "Installing Claude Code CLI"
 
-    # Try npm installation (adjust based on actual installation method)
-    if command -v npm &>/dev/null; then
-        log_info "Attempting npm installation of Claude CLI"
+    # Prefer official install methods
+    if command -v claude &>/dev/null; then
+        log_success "Claude CLI already available"
+    else
+        if [[ "$(uname)" == "Darwin" ]]; then
+            if command -v brew &>/dev/null; then
+                log_info "Installing Claude Code via Homebrew cask"
+                if brew install --cask claude-code; then
+                    log_success "Claude CLI installed via Homebrew"
+                else
+                    log_error "Homebrew install failed"
+                    return 1
+                fi
+            else
+                log_warn "Homebrew not found; using official install script"
+                local claude_installer
+                claude_installer=$(mktemp)
+                trap 'rm -f "$claude_installer"' RETURN
 
-        # Check if there's an official npm package
-        # This is a placeholder - update with actual package name when known
-        if npm install -g @anthropic-ai/claude-code 2>/dev/null; then
-            log_success "Claude CLI installed via npm"
+                if curl -fsSL -o "$claude_installer" "$CLAUDE_INSTALL_URL" && bash "$claude_installer"; then
+                    log_success "Claude CLI installed via install script"
+                else
+                    log_error "Claude CLI install script failed"
+                    log_info "Please install manually from: https://claude.ai/download"
+                    return 1
+                fi
+            fi
         else
-            log_warn "npm package not available, trying alternative installation method"
-
-            # Alternative: Download from GitHub releases or official site
-            log_progress "Downloading Claude CLI from official source"
-
-            # Download installer to temporary file
-            # Official installation: curl -fsSL https://claude.ai/install.sh (pipe to bash)
-            local install_url="https://claude.ai/install.sh"
+            log_info "Installing Claude Code via official install script"
             local claude_installer
             claude_installer=$(mktemp)
-
-            # Ensure cleanup
             trap 'rm -f "$claude_installer"' RETURN
 
-            log_progress "Downloading Claude CLI installer"
-            if ! curl -fsSL -o "$claude_installer" "$install_url"; then
-                log_error "Failed to download Claude CLI installer"
-                log_info "Please install manually from: https://claude.ai/download"
-                rm -f "$claude_installer"
-                return 1
-            fi
-
-            # Note: Cannot verify checksum as Claude CLI installer may update frequently
-            log_warn "Executing Claude CLI installer (checksum verification not available)"
-
-            # Execute installer
-            if bash "$claude_installer"; then
-                log_success "Claude CLI installed"
-
-                # Source shell profile to update PATH
-                log_progress "Updating PATH for Claude CLI"
-                if [[ -f "$HOME/.bashrc" ]]; then
-                    # shellcheck source=/dev/null
-                    source "$HOME/.bashrc" 2>/dev/null || true
-                fi
-                if [[ -f "$HOME/.profile" ]]; then
-                    # shellcheck source=/dev/null
-                    source "$HOME/.profile" 2>/dev/null || true
-                fi
-
-                # Also try common Claude CLI installation locations
-                for claude_path in \
-                    "$HOME/.local/bin/claude" \
-                    "$HOME/bin/claude" \
-                    "/usr/local/bin/claude" \
-                    "$HOME/.claude/bin/claude"; do
-                    if [[ -x "$claude_path" ]]; then
-                        log_success "Found Claude CLI at: $claude_path"
-                        # Add to PATH if not already there
-                        claude_dir=$(dirname "$claude_path")
-                        if [[ ":$PATH:" != *":$claude_dir:"* ]]; then
-                            export PATH="$claude_dir:$PATH"
-                            log_info "Added $claude_dir to PATH"
-                        fi
-                        break
-                    fi
-                done
+            if curl -fsSL -o "$claude_installer" "$CLAUDE_INSTALL_URL" && bash "$claude_installer"; then
+                log_success "Claude CLI installed via install script"
             else
-                log_error "Failed to install Claude CLI"
+                log_error "Claude CLI install script failed"
                 log_info "Please install manually from: https://claude.ai/download"
-                rm -f "$claude_installer"
                 return 1
             fi
-
-            rm -f "$claude_installer"
         fi
-    else
-        log_error "npm not available for Claude CLI installation"
-        return 1
+    fi
+
+    # Ensure PATH contains common install locations for this session
+    export PATH="$HOME/.local/bin:$HOME/.claude/bin:/usr/local/bin:/opt/homebrew/bin:$PATH"
+
+    if ! validate_command "claude"; then
+        if ! ensure_claude_path; then
+            log_error "Claude CLI not found after installation"
+            log_info "Try reloading your shell: source ~/.bashrc (or ~/.zshrc)"
+            log_info "Manual install: curl -fsSL https://claude.ai/install.sh -o /tmp/claude-install.sh && bash /tmp/claude-install.sh"
+            return 1
+        fi
     fi
 
     # Verify Anthropic SDK is installed (should be from Python module)
@@ -171,12 +188,12 @@ install() {
 validate() {
     log_progress "Validating Claude CLI installation"
 
-    export PATH="$HOME/.local/npm-global/bin:$HOME/.local/bin:$PATH"
+    export PATH="$HOME/.local/bin:$HOME/.claude/bin:/usr/local/bin:/opt/homebrew/bin:$PATH"
 
     local all_valid=true
 
     # Check Claude CLI
-    if validate_command "claude"; then
+    if validate_command "claude" || ensure_claude_path; then
         if claude --version &>/dev/null; then
             local version
             version=$(claude --version 2>&1 | head -n1)
@@ -229,9 +246,9 @@ validate() {
 rollback() {
     log_warn "Rolling back Claude CLI installation"
 
-    # Uninstall Claude CLI if installed via npm
-    if command -v npm &>/dev/null; then
-        npm uninstall -g @anthropic-ai/claude-code 2>/dev/null || true
+    # Uninstall Claude CLI if installed via Homebrew
+    if command -v brew &>/dev/null; then
+        brew uninstall --cask claude-code 2>/dev/null || true
     fi
 
     # Remove config directory

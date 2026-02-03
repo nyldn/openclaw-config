@@ -25,6 +25,7 @@ check_installed() {
     log_debug "Checking if $MODULE_NAME is installed"
 
     # Check if Claude CLI is available
+    export PATH="$HOME/.local/bin:$HOME/.claude/bin:/usr/local/bin:/opt/homebrew/bin:$PATH"
     if ! validate_command "claude"; then
         log_debug "Claude CLI not found"
         return 1
@@ -45,12 +46,13 @@ check_installed() {
 install() {
     log_section "Installing Claude Octopus Plugin"
 
-    export PATH="$HOME/.local/npm-global/bin:$HOME/.local/bin:$PATH"
+    export PATH="$HOME/.local/bin:$HOME/.claude/bin:/usr/local/bin:/opt/homebrew/bin:$PATH"
 
     # Verify Claude CLI is available
     if ! validate_command "claude"; then
-        log_error "Claude CLI is not installed. Please install claude-cli module first."
-        return 1
+        log_warn "Claude CLI is not installed. Skipping claude-octopus install."
+        log_info "Install later with: ./bootstrap.sh --only claude-cli,claude-octopus"
+        return 0
     fi
 
     log_info "Installing Claude Octopus from: $PLUGIN_URL"
@@ -115,12 +117,12 @@ validate() {
     local all_valid=true
 
     # Check Claude CLI
+    export PATH="$HOME/.local/bin:$HOME/.claude/bin:/usr/local/bin:/opt/homebrew/bin:$PATH"
     if validate_command "claude"; then
         log_success "Claude CLI is available"
     else
-        log_error "Claude CLI not found"
-        all_valid=false
-        return 1
+        log_warn "Claude CLI not found; skipping claude-octopus validation"
+        return 0
     fi
 
     # Check if plugin is installed

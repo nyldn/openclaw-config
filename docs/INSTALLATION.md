@@ -11,12 +11,14 @@ Complete guide for installing OpenClaw VM configuration system on Debian/Ubuntu 
 **For security reasons, we recommend cloning the repository first:**
 
 ```bash
-# Clone the repository
-git clone https://github.com/nyldn/openclaw-config.git
-cd openclaw-config/bootstrap
+# One-line install (clone + run)
+git clone https://github.com/nyldn/openclaw-config.git && cd openclaw-config/bootstrap && ./bootstrap.sh
+```
 
-# Run the interactive installer
-./bootstrap.sh
+**Alternative One-Line (Download + Run):**
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/nyldn/openclaw-config/main/bootstrap/install.sh -o /tmp/openclaw-install.sh && bash /tmp/openclaw-install.sh
 ```
 
 **What this does:**
@@ -68,6 +70,9 @@ cd openclaw-config/bootstrap
 
 # Verbose output
 ./bootstrap.sh --verbose
+
+# Skip the post-install setup wizard
+./bootstrap.sh --skip-setup
 ```
 
 ---
@@ -165,6 +170,8 @@ sudo apt-get install -y git curl bash sudo
 - Claude Octopus (multi-AI orchestration)
 
 Gemini CLI reference: https://github.com/google-gemini/gemini-cli
+Claude Octopus requires the Claude CLI; if it isn't installed yet, the module will skip and you can rerun later with:
+`./bootstrap.sh --only claude-cli,claude-octopus`
 
 ### Security Features
 - SSH hardening (key-only auth, no root)
@@ -173,6 +180,9 @@ Gemini CLI reference: https://github.com/google-gemini/gemini-cli
 - AIDE file integrity monitoring
 - Automatic security updates
 - Daily security reports
+
+Automatic security updates are enabled non-interactively (no prompts).
+In Docker/container test runs, UFW and fail2ban may be unavailable; validation will warn instead of failing.
 
 ### MCP Servers (10 total)
 - Google Drive
@@ -255,6 +265,14 @@ The summary includes:
 
 ## ✅ Post-Installation
 
+The installer runs the post-install setup and auth wizards automatically (interactive installs).
+If you skipped it (or want to re-run), use:
+
+```bash
+bash ~/openclaw-config/bootstrap/scripts/openclaw-setup.sh
+bash ~/openclaw-config/bootstrap/scripts/openclaw-auth.sh --all
+```
+
 ### 1. Verify Installation
 
 ```bash
@@ -303,6 +321,13 @@ supabase login
 # Secrets management (optional)
 doppler login
 ```
+
+### Claude Code CLI Notes
+
+- macOS: `brew install --cask claude-code`
+- Linux: `curl -fsSL https://claude.ai/install.sh -o /tmp/claude-install.sh && bash /tmp/claude-install.sh`
+- Node.js 18+ only required for deprecated npm install flows
+- `ripgrep` is usually included; if `claude` search fails, see Claude search troubleshooting
 
 ### 4. Reload Shell
 
@@ -395,13 +420,20 @@ tail -f ~/openclaw-config/bootstrap/logs/modules/<run_id>/<module>.log
    # Log out and back in
    ```
 
-2. **Insufficient disk space**
+2. **Doppler CLI install fails with dpkg permission error**
+   ```bash
+   # Run with sudo (Linux)
+   curl -Ls https://cli.doppler.com/install.sh -o /tmp/doppler.sh
+   sudo sh /tmp/doppler.sh
+   ```
+
+3. **Insufficient disk space**
    ```bash
    df -h
    # Free up space or install to different location
    ```
 
-3. **Network connectivity**
+4. **Network connectivity**
    ```bash
    # Test GitHub access
    curl -I https://github.com
@@ -410,11 +442,11 @@ tail -f ~/openclaw-config/bootstrap/logs/modules/<run_id>/<module>.log
    ping -c 3 github.com
    ```
 
-4. **Permission denied**
+5. **Permission denied**
    ```bash
-# Ensure scripts are executable
-chmod +x ~/openclaw-config/bootstrap/bootstrap.sh
-chmod +x ~/openclaw-config/bootstrap/modules/*.sh
+   # Ensure scripts are executable
+   chmod +x ~/openclaw-config/bootstrap/bootstrap.sh
+   chmod +x ~/openclaw-config/bootstrap/modules/*.sh
    ```
 
 ### Module-Specific Failures

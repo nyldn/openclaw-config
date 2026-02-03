@@ -41,9 +41,11 @@ INTERACTIVE_MODE=false
 UPDATE_MODE=false
 CHECK_ONLY=false
 VALIDATE_ONLY=false
+SKIP_SETUP=false
 MANIFEST_URL="$DEFAULT_MANIFEST_URL"
 SELECTED_MODULES=()
 SKIP_MODULES=()
+IS_FIRST_RUN=false
 
 # Usage information
 usage() {
@@ -69,6 +71,7 @@ OPTIONS:
 
     --manifest-url URL      Use custom manifest URL
     --list-modules          List available modules
+    --skip-setup            Skip post-install setup wizard
 
 EXAMPLES:
     # Initial installation
@@ -178,6 +181,10 @@ parse_args() {
                 list_modules
                 exit 0
                 ;;
+            --skip-setup)
+                SKIP_SETUP=true
+                shift
+                ;;
             *)
                 log_error "Unknown option: $1"
                 usage
@@ -198,6 +205,20 @@ version: "0.0.0"
 installed_at: "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
 modules: {}
 EOF
+    fi
+}
+
+# Detect if this is a first-time install
+detect_first_run() {
+    local -a existing_modules=()
+    if [[ -f "$STATE_FILE" ]]; then
+        mapfile -t existing_modules < <(get_installed_modules || true)
+    fi
+
+    if [[ ${#existing_modules[@]} -eq 0 ]]; then
+        IS_FIRST_RUN=true
+    else
+        IS_FIRST_RUN=false
     fi
 }
 
@@ -650,6 +671,54 @@ on_interrupt() {
     exit 130
 }
 
+# Post-install wizard: summarize next steps and optionally run setup
+post_install_wizard() {
+    local -a failed_modules=("$@")
+    local setup_script="$SCRIPT_DIR/scripts/openclaw-setup.sh"
+    local auth_script="$SCRIPT_DIR/scripts/openclaw-auth.sh"
+    local rc_file=".bashrc"
+
+    if [[ "${SHELL:-}" == *zsh ]]; then
+        rc_file=".zshrc"
+    fi
+
+    log_section "Post-Install Wizard"
+    log_info "Outstanding tasks:"
+
+    local idx=1
+    if [[ ${#failed_modules[@]} -gt 0 ]]; then
+        echo "  ${idx}. Retry failed modules: ./bootstrap.sh --only $(IFS=,; echo "${failed_modules[*]}")" >&2
+        idx=$((idx + 1))
+    fi
+    echo "  ${idx}. Configure API keys and integrations: bash $setup_script" >&2
+    idx=$((idx + 1))
+    echo "  ${idx}. Authenticate CLI tools: bash $auth_script --all" >&2
+    idx=$((idx + 1))
+    echo "  ${idx}. Validate installation: ./bootstrap.sh --validate" >&2
+    idx=$((idx + 1))
+    echo "  ${idx}. Reload your shell: source ~/$rc_file" >&2
+    echo "" >&2
+
+    if [[ "$DRY_RUN" == "true" ]] || [[ "$NON_INTERACTIVE" == "true" ]] || \
+       [[ "$SKIP_SETUP" == "true" ]] || [[ "${OPENCLAW_SKIP_SETUP:-}" == "1" ]] || \
+       [[ ! -t 0 || ! -t 1 ]]; then
+        log_info "Skipping post-install wizard (non-interactive or disabled)"
+        return 0
+    fi
+
+    if [[ -f "$setup_script" ]]; then
+        log_info "Running post-install setup wizard..."
+        bash "$setup_script" || log_warn "Setup wizard exited with errors"
+
+        if [[ -f "$auth_script" ]]; then
+            log_info "Running CLI authentication wizard..."
+            bash "$auth_script" --all || log_warn "CLI authentication exited with errors"
+        fi
+    else
+        log_warn "Setup wizard not found: $setup_script"
+    fi
+}
+
 # Main installation flow
 main() {
     # Parse arguments
@@ -670,6 +739,7 @@ main() {
 
     # Initialize state
     init_state
+    detect_first_run
 
     # Initialize summary tracking
     summary_init
@@ -781,20 +851,9 @@ main() {
     else
         log_warn "Bootstrap installation completed with errors"
     fi
-    echo ""
-    log_info "Next steps:"
-    echo ""
-    echo "  First, reload your shell to enable commands:"
-    echo "     source ~/.bashrc"
-    echo ""
-    echo "  Then run the setup wizard:"
-    echo "     openclaw-setup              # Configure API keys"
-    echo "     openclaw-auth --all         # Authenticate CLIs"
-    echo "     openclaw-validate           # Verify everything works"
-    echo ""
-    echo "  Or run directly without reloading:"
-    echo "     bash ~/openclaw-config/bootstrap/scripts/openclaw-setup.sh"
-    echo ""
+
+    post_install_wizard "${failed_modules[@]}"
+
     log_info "For help: $0 --help"
 }
 

@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 
 # Module: OpenClaw Environment
-# Creates GOTCHA framework directory structure and copies files
+# Creates OpenClaw workspace directory structure
 
 MODULE_NAME="openclaw-env"
 MODULE_VERSION="1.0.0"
-MODULE_DESCRIPTION="GOTCHA framework directory structure"
+MODULE_DESCRIPTION="OpenClaw workspace directory structure"
 MODULE_DEPS=("system-deps")
 
 # Source utilities
@@ -18,7 +18,6 @@ source "$LIB_DIR/logger.sh"
 source "$LIB_DIR/validation.sh"
 
 WORKSPACE_DIR="$HOME/openclaw-workspace"
-SOURCE_DIR="$(dirname "$(dirname "$SCRIPT_DIR")")/atlas_framework"
 
 # Check if module is already installed
 check_installed() {
@@ -72,38 +71,8 @@ install() {
     done
     log_success "Directory structure created"
 
-    # Copy CLAUDE.md if it exists in atlas_framework
-    if [[ -f "$SOURCE_DIR/CLAUDE.md" ]]; then
-        log_progress "Copying CLAUDE.md to workspace"
-        cp "$SOURCE_DIR/CLAUDE.md" "$WORKSPACE_DIR/CLAUDE.md"
-        log_success "CLAUDE.md copied"
-    else
-        log_warn "CLAUDE.md not found in atlas_framework (skipping)"
-    fi
-
-    # Copy build_app.md to goals/ if it exists
-    if [[ -f "$SOURCE_DIR/build_app.md" ]]; then
-        log_progress "Copying build_app.md to goals/"
-        cp "$SOURCE_DIR/build_app.md" "$WORKSPACE_DIR/goals/build_app.md"
-        log_success "build_app.md copied"
-    else
-        log_warn "build_app.md not found in atlas_framework (skipping)"
-    fi
-
-    # Copy memory tools if they exist
-    if [[ -d "$SOURCE_DIR/memory" ]]; then
-        log_progress "Copying memory tools to tools/memory/"
-        mkdir -p "$WORKSPACE_DIR/tools/memory"
-
-        # Copy all Python files from memory directory
-        if cp -r "$SOURCE_DIR/memory/"* "$WORKSPACE_DIR/tools/memory/" 2>/dev/null; then
-            log_success "Memory tools copied"
-        else
-            log_warn "No memory tools found to copy"
-        fi
-    else
-        log_warn "Memory tools directory not found in atlas_framework"
-    fi
+    # Create memory tools directory (placeholder for user tools)
+    mkdir -p "$WORKSPACE_DIR/tools/memory"
 
     # Create tools/manifest.md
     log_progress "Creating tools/manifest.md"
@@ -112,28 +81,15 @@ install() {
 
 This file lists all available tools in the OpenClaw workspace.
 
-## Memory Tools
+## Memory Tools (Optional)
 
-Located in `tools/memory/`:
+Place any memory-related scripts in `tools/memory/`. Add their usage notes here
+so the workspace stays self-documenting.
 
-- **memory_db.py**: Database initialization and schema management
-- **memory_read.py**: Read and display memory entries
-- **memory_write.py**: Write new memory entries
-- **semantic_search.py**: Semantic search using embeddings
-- **hybrid_search.py**: Combined keyword + semantic search
-- **embed_memory.py**: Generate and store embeddings
-
-### Usage Examples
+### Example
 
 ```bash
-# Write to memory
-python tools/memory/memory_write.py --content "Important fact" --type fact
-
-# Read all memory
-python tools/memory/memory_read.py --format markdown
-
-# Search memory
-python tools/memory/hybrid_search.py --query "search term"
+python tools/memory/your_tool.py --help
 ```
 
 ## Adding New Tools

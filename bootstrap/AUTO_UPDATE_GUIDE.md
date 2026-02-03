@@ -313,10 +313,31 @@ Ensure your user has passwordless sudo for these operations, or updates will fai
 
 ### Unattended Upgrades
 
-For critical security updates, consider also enabling unattended-upgrades:
+For critical security updates, enable unattended-upgrades without prompts:
 ```bash
 sudo apt-get install unattended-upgrades
-sudo dpkg-reconfigure -plow unattended-upgrades
+
+# Enable periodic updates (no interactive prompts)
+sudo tee /etc/apt/apt.conf.d/20auto-upgrades >/dev/null <<'EOF'
+APT::Periodic::Update-Package-Lists "1";
+APT::Periodic::Unattended-Upgrade "1";
+APT::Periodic::Download-Upgradeable-Packages "1";
+APT::Periodic::AutocleanInterval "7";
+EOF
+
+sudo tee /etc/apt/apt.conf.d/50unattended-upgrades >/dev/null <<'EOF'
+Unattended-Upgrade::Allowed-Origins {
+    "${distro_id}:${distro_codename}-security";
+};
+Unattended-Upgrade::AutoFixInterruptedDpkg "true";
+Unattended-Upgrade::MinimalSteps "true";
+Unattended-Upgrade::Remove-Unused-Kernel-Packages "true";
+Unattended-Upgrade::Remove-Unused-Dependencies "true";
+Unattended-Upgrade::Automatic-Reboot "false";
+EOF
+
+# Enable timers if systemd is available
+sudo systemctl enable --now apt-daily.timer apt-daily-upgrade.timer
 ```
 
 This provides security patches between daily runs.
