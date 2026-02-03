@@ -17,6 +17,9 @@ TESTS_PASSED=0
 TESTS_FAILED=0
 TESTS_TOTAL=0
 
+# Repo root
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 # Logging functions
 log_test() {
     echo -e "${BLUE}[TEST $((TESTS_TOTAL + 1))]${NC} $1"
@@ -58,7 +61,7 @@ echo ""
 # Test 1: Build Docker image
 run_test
 log_test "Building Docker test image"
-if docker build --no-cache -t openclaw-test:latest -f Dockerfile.test . > /tmp/openclaw-build.log 2>&1; then
+if docker build --no-cache -t openclaw-test:latest -f bootstrap/tests/docker/Dockerfile "$REPO_ROOT" > /tmp/openclaw-build.log 2>&1; then
     log_pass "Docker image built successfully"
 else
     log_fail "Docker image build failed"
@@ -69,7 +72,9 @@ fi
 # Test 2: Basic installation (system-deps only)
 run_test
 log_test "Testing minimal installation (system-deps only)"
-if docker run --rm --name openclaw-test-minimal openclaw-test:latest \
+if docker run --rm --name openclaw-test-minimal \
+    -v "${REPO_ROOT}:/home/testuser/openclaw-config" \
+    openclaw-test:latest \
     bash -c "cd /home/testuser/openclaw-config/bootstrap && ./bootstrap.sh --non-interactive --only system-deps && ./bootstrap.sh --validate" \
     > /tmp/openclaw-minimal.log 2>&1; then
     log_pass "Minimal installation completed"
@@ -81,7 +86,9 @@ fi
 # Test 3: Python + Node.js installation
 run_test
 log_test "Testing Python + Node.js installation"
-if docker run --rm --name openclaw-test-foundation openclaw-test:latest \
+if docker run --rm --name openclaw-test-foundation \
+    -v "${REPO_ROOT}:/home/testuser/openclaw-config" \
+    openclaw-test:latest \
     bash -c "cd /home/testuser/openclaw-config/bootstrap && ./bootstrap.sh --non-interactive --only system-deps,python,nodejs && ./bootstrap.sh --validate" \
     > /tmp/openclaw-foundation.log 2>&1; then
     log_pass "Foundation modules installed successfully"
@@ -93,7 +100,9 @@ fi
 # Test 4: Verify no curl|bash patterns exist
 run_test
 log_test "Verifying no curl|bash vulnerabilities"
-if ! docker run --rm openclaw-test:latest \
+if ! docker run --rm \
+    -v "${REPO_ROOT}:/home/testuser/openclaw-config" \
+    openclaw-test:latest \
     bash -c "cd /home/testuser/openclaw-config && grep -r 'curl.*|.*bash' bootstrap/ --exclude='*.log' --exclude='test-*.sh' --exclude='*.md' --exclude='*.yaml' --exclude-dir='docs'" \
     2>/dev/null; then
     log_pass "No curl|bash patterns found"
@@ -104,7 +113,9 @@ fi
 # Test 5: Verify secret sanitization
 run_test
 log_test "Testing secret sanitization in logs"
-docker run --rm openclaw-test:latest \
+docker run --rm \
+    -v "${REPO_ROOT}:/home/testuser/openclaw-config" \
+    openclaw-test:latest \
     bash -c "cd /home/testuser/openclaw-config/bootstrap && \
     ./bootstrap.sh --non-interactive --only system-deps > /tmp/test.log 2>&1 && \
     ! grep -i 'sk-ant-' /tmp/test.log && \
@@ -120,7 +131,9 @@ fi
 # Test 6: Verify file permissions
 run_test
 log_test "Checking file permissions for security"
-if docker run --rm openclaw-test:latest \
+if docker run --rm \
+    -v "${REPO_ROOT}:/home/testuser/openclaw-config" \
+    openclaw-test:latest \
     bash -c "[ ! -d ~/.openclaw ] || [ \$(stat -c %a ~/.openclaw) = '700' ]" \
     2>/dev/null; then
     log_pass "File permissions are secure (700 if directory exists)"
@@ -131,11 +144,13 @@ fi
 # Test 7: Test dependency resolution
 run_test
 log_test "Testing dependency resolution"
-if docker run --rm openclaw-test:latest \
+if docker run --rm \
+    -v "${REPO_ROOT}:/home/testuser/openclaw-config" \
+    openclaw-test:latest \
     bash -c "cd /home/testuser/openclaw-config/bootstrap && \
     source lib/logger.sh && \
     source lib/dependency-resolver.sh && \
-    resolved=\$(resolve_dependencies . system-deps python nodejs) && \
+    resolved=\$(resolve_dependencies modules system-deps python nodejs) && \
     echo \"Resolved dependencies: \$resolved\" && \
     [[ -n \"\$resolved\" ]]" \
     > /tmp/openclaw-deps.log 2>&1; then
@@ -148,7 +163,9 @@ fi
 # Test 8: Verify checksums file exists
 run_test
 log_test "Verifying checksums manifest exists"
-if docker run --rm openclaw-test:latest \
+if docker run --rm \
+    -v "${REPO_ROOT}:/home/testuser/openclaw-config" \
+    openclaw-test:latest \
     bash -c "cd /home/testuser/openclaw-config/bootstrap && [ -f checksums.yaml ]" \
     2>/dev/null; then
     log_pass "Checksums manifest exists"
@@ -159,7 +176,9 @@ fi
 # Test 9: Verify new libraries exist
 run_test
 log_test "Verifying new security libraries exist"
-if docker run --rm openclaw-test:latest \
+if docker run --rm \
+    -v "${REPO_ROOT}:/home/testuser/openclaw-config" \
+    openclaw-test:latest \
     bash -c "cd /home/testuser/openclaw-config/bootstrap && \
     [ -f lib/secure-download.sh ] && \
     [ -f lib/crypto.sh ] && \
@@ -174,7 +193,9 @@ fi
 # Test 10: Verify productivity module exists
 run_test
 log_test "Verifying productivity tools module exists"
-if docker run --rm openclaw-test:latest \
+if docker run --rm \
+    -v "${REPO_ROOT}:/home/testuser/openclaw-config" \
+    openclaw-test:latest \
     bash -c "cd /home/testuser/openclaw-config/bootstrap && [ -f modules/15-productivity-tools.sh ]" \
     2>/dev/null; then
     log_pass "Productivity tools module exists"
@@ -185,7 +206,9 @@ fi
 # Test 11: Verify MCP implementations exist
 run_test
 log_test "Verifying MCP server implementations"
-if docker run --rm openclaw-test:latest \
+if docker run --rm \
+    -v "${REPO_ROOT}:/home/testuser/openclaw-config" \
+    openclaw-test:latest \
     bash -c "cd /home/testuser/openclaw-config/deployment-tools/mcp/implementations && \
     [ -f google-calendar-mcp.js ] && \
     [ -f email-mcp.js ] && \
@@ -200,11 +223,13 @@ fi
 # Test 12: Verify documentation exists
 run_test
 log_test "Verifying documentation files"
-if docker run --rm openclaw-test:latest \
+if docker run --rm \
+    -v "${REPO_ROOT}:/home/testuser/openclaw-config" \
+    openclaw-test:latest \
     bash -c "cd /home/testuser/openclaw-config && \
-    [ -f INSTALLATION.md ] && \
-    [ -f MIGRATION.md ] && \
-    [ -f SECURITY.md ] && \
+    [ -f docs/INSTALLATION.md ] && \
+    [ -f docs/guides/MIGRATION.md ] && \
+    [ -f docs/guides/SECURITY.md ] && \
     [ -f deployment-tools/docs/PRODUCTIVITY_INTEGRATIONS.md ]" \
     2>/dev/null; then
     log_pass "All documentation files present"
@@ -215,7 +240,9 @@ fi
 # Test 13: Test --list-modules flag
 run_test
 log_test "Testing --list-modules functionality"
-if docker run --rm openclaw-test:latest \
+if docker run --rm \
+    -v "${REPO_ROOT}:/home/testuser/openclaw-config" \
+    openclaw-test:latest \
     bash -c "cd /home/testuser/openclaw-config/bootstrap && ./bootstrap.sh --list-modules | grep -q 'productivity-tools'" \
     > /tmp/openclaw-list.log 2>&1; then
     log_pass "Module listing works and includes new modules"
@@ -227,8 +254,10 @@ fi
 # Test 14: Test --dry-run flag
 run_test
 log_test "Testing --dry-run functionality"
-if docker run --rm openclaw-test:latest \
-    bash -c "cd /home/testuser/openclaw-config/bootstrap && ./bootstrap.sh --dry-run --only system-deps | grep -q 'DRY RUN'" \
+if docker run --rm \
+    -v "${REPO_ROOT}:/home/testuser/openclaw-config" \
+    openclaw-test:latest \
+    bash -c "cd /home/testuser/openclaw-config/bootstrap && ./bootstrap.sh --dry-run --only system-deps 2>&1 | grep -q 'DRY RUN'" \
     > /tmp/openclaw-dryrun.log 2>&1; then
     log_pass "Dry-run mode working"
 else
@@ -238,7 +267,9 @@ fi
 # Test 15: Verify manifest v2.0 format
 run_test
 log_test "Verifying manifest.yaml v2.0 format"
-if docker run --rm openclaw-test:latest \
+if docker run --rm \
+    -v "${REPO_ROOT}:/home/testuser/openclaw-config" \
+    openclaw-test:latest \
     bash -c "cd /home/testuser/openclaw-config/bootstrap && \
     grep -q 'version: \"2.0.0\"' manifest.yaml && \
     grep -q 'category:' manifest.yaml && \

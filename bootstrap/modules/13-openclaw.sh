@@ -220,6 +220,8 @@ EOF
 validate() {
     log_progress "Validating OpenClaw installation"
 
+    export PATH="$HOME/.local/npm-global/bin:$HOME/.local/bin:$PATH"
+
     local all_valid=true
 
     # Check OpenClaw command

@@ -4,7 +4,7 @@
 # Fetches and runs the bootstrap system from GitHub
 #
 # SECURITY NOTICE:
-# This script is designed to be safe for curl | bash usage:
+# This script is designed to be safe for curl-to-bash usage:
 # - Uses mktemp for secure temporary directories
 # - Clones full repository for inspection
 # - Auto-detects TTY and uses non-interactive mode when piped
@@ -130,7 +130,7 @@ run_bootstrap() {
     local bootstrap_args=("$@")
 
     if [[ ! -t 0 ]]; then
-        log_warn "No TTY detected (running via curl | bash)"
+        log_warn "No TTY detected (running via curl-to-bash)"
         log_info "Using non-interactive mode with minimal installation"
         bootstrap_args=("--non-interactive" "--only" "system-deps,python,nodejs")
     fi

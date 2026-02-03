@@ -79,7 +79,9 @@ install() {
     # Copy MCP server implementations
     log_progress "Copying MCP server implementations"
 
-    local source_dir="$SCRIPT_DIR/../deployment-tools/mcp/implementations"
+    local repo_root
+    repo_root="$(dirname "$(dirname "$SCRIPT_DIR")")"
+    local source_dir="$repo_root/deployment-tools/mcp/implementations"
 
     if [[ ! -d "$source_dir" ]]; then
         log_error "MCP implementations directory not found: $source_dir"
@@ -137,6 +139,58 @@ Your token will be saved to:
 ~/.openclaw/google-calendar-token.json
 
 The MCP server is now ready to use!
+EOF
+
+    # Google Drive credentials template
+    cat > "$CONFIG_DIR/google-drive-setup.md" <<'EOF'
+# Google Drive Setup
+
+## 1. Enable Google Drive API
+
+1. Go to: https://console.cloud.google.com/
+2. Create a new project or select existing one
+3. Navigate to APIs & Services → Library
+4. Search for "Google Drive API" and enable it
+5. Go to "Credentials" → "Create Credentials" → "OAuth client ID"
+6. Choose "Desktop app"
+7. Download the credentials JSON file
+
+## 2. Save Credentials
+
+Save the downloaded JSON file to:
+~/.openclaw/google-drive-credentials.json
+
+Or if you already have Google Calendar credentials, you can use the same file:
+cp ~/.openclaw/google-calendar-credentials.json ~/.openclaw/google-drive-credentials.json
+
+## 3. Authenticate
+
+Run the authentication helper:
+openclaw-auth --google-drive
+
+Or manually:
+node ~/openclaw-config/deployment-tools/mcp/implementations/google-drive-mcp.js
+
+Follow the URL to grant permissions, then paste the code back.
+
+## 4. Test
+
+Your token will be saved to:
+~/.openclaw/google-drive-token.json
+
+The MCP server is now ready to use!
+
+## Available Tools
+
+- listFiles: List files and folders
+- searchFiles: Search by name or content
+- uploadFile: Upload local files
+- downloadFile: Download files
+- createFolder: Create new folders
+- shareFile: Share with permissions
+- getFileInfo: Get file metadata
+- deleteFile: Move to trash
+- moveFile: Move between folders
 EOF
 
     # Email credentials template

@@ -74,7 +74,7 @@ install() {
             log_progress "Downloading Claude CLI from official source"
 
             # Download installer to temporary file
-            # Official installation: curl -fsSL https://claude.ai/install.sh | bash
+            # Official installation: curl -fsSL https://claude.ai/install.sh (pipe to bash)
             local install_url="https://claude.ai/install.sh"
             local claude_installer
             claude_installer=$(mktemp)
@@ -170,6 +170,8 @@ install() {
 # Validate installation
 validate() {
     log_progress "Validating Claude CLI installation"
+
+    export PATH="$HOME/.local/npm-global/bin:$HOME/.local/bin:$PATH"
 
     local all_valid=true
 

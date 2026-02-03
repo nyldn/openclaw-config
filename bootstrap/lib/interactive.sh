@@ -1,94 +1,51 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
-# Interactive menu system for OpenClaw bootstrap
-# Provides user-friendly module selection with dependency resolution
+# Simple CLI menu system for OpenClaw bootstrap
+# Provides a fast, single-pass interactive selection flow
 #
 
 set -euo pipefail
 
 # Source required libraries
 LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=logger.sh
 source "${LIB_DIR}/logger.sh"
 
-# UI mode detection
-UI_MODE=""
+# TTY detection
 HAS_TTY=false
 
 #
 # Initialize interactive system
-# Detects available UI tools and TTY capability
-#
 # Returns:
 #   0 on success, 1 if not interactive
 #
 interactive_init() {
     log_debug "Initializing interactive system"
 
-    # Check if we have a TTY
     if [[ -t 0 && -t 1 ]]; then
         HAS_TTY=true
         log_debug "TTY detected"
-    else
-        HAS_TTY=false
-        log_debug "No TTY detected (non-interactive environment)"
-        return 1
+        return 0
     fi
 
-    # Detect available UI tools (in order of preference)
-    if command -v dialog &> /dev/null; then
-        UI_MODE="dialog"
-        log_debug "Using dialog for UI"
-    elif command -v whiptail &> /dev/null; then
-        UI_MODE="whiptail"
-        log_debug "Using whiptail for UI"
-    else
-        UI_MODE="simple"
-        log_debug "Using simple prompts for UI"
-    fi
-
-    return 0
+    HAS_TTY=false
+    log_debug "No TTY detected (non-interactive environment)"
+    return 1
 }
 
 #
 # Show welcome screen
 #
 show_welcome_screen() {
-    local title="OpenClaw Bootstrap System"
-    local message="Welcome to the OpenClaw interactive installer!
+    local title="OpenClaw Bootstrap"
+    local message="Quick install wizard. Pick a preset or choose modules, then we run once."
 
-This wizard will help you select and install the components you need:
-
-• System Dependencies (Required)
-• Python Environment
-• Node.js Environment
-• AI CLI Tools (Claude, OpenAI, Gemini)
-• Deployment Tools (Vercel, Netlify, Supabase)
-• Development Tools
-• Productivity Integrations
-• Security Hardening
-
-You can choose a preset or customize your installation."
-
-    case "$UI_MODE" in
-        dialog)
-            dialog --title "$title" \
-                   --msgbox "$message" 20 70
-            ;;
-        whiptail)
-            whiptail --title "$title" \
-                     --msgbox "$message" 20 70
-            ;;
-        simple)
-            echo ""
-            echo "═══════════════════════════════════════════════════════"
-            echo "  $title"
-            echo "═══════════════════════════════════════════════════════"
-            echo ""
-            echo "$message"
-            echo ""
-            read -p "Press Enter to continue..." -r
-            ;;
-    esac
+    echo ""
+    echo "========================================================"
+    echo "  ${title}"
+    echo "========================================================"
+    echo "${message}"
+    echo ""
 }
 
 #
@@ -98,55 +55,35 @@ You can choose a preset or customize your installation."
 #   Selected preset name (minimal, developer, full, custom)
 #
 show_preset_menu() {
-    local title="Installation Preset"
     local message="Choose an installation preset:"
 
-    local -a presets=(
-        "minimal" "Essential tools only (System deps, Python, Node.js)" \
-        "developer" "Development environment (Minimal + AI CLIs + Dev tools)" \
-        "full" "Complete installation (All modules including productivity)" \
-        "custom" "Custom selection (Choose modules manually)"
-    )
+    echo "${message}"
+    echo ""
+    echo "1) Minimal   - System deps, Python, Node.js"
+    echo "2) Developer - Minimal + AI CLIs + Dev tools"
+    echo "3) Full      - Everything"
+    echo "4) Custom    - Select modules"
+    echo "Q) Quit"
+    echo ""
 
-    case "$UI_MODE" in
-        dialog)
-            dialog --title "$title" \
-                   --menu "$message" 20 70 10 \
-                   "${presets[@]}" \
-                   2>&1 >/dev/tty
-            ;;
-        whiptail)
-            whiptail --title "$title" \
-                     --menu "$message" 20 70 10 \
-                     "${presets[@]}" \
-                     3>&1 1>&2 2>&3
-            ;;
-        simple)
-            echo ""
-            echo "═══ Installation Preset ═══"
-            echo ""
-            echo "1) Minimal     - Essential tools only (System deps, Python, Node.js)"
-            echo "2) Developer   - Development environment (Minimal + AI CLIs + Dev tools)"
-            echo "3) Full        - Complete installation (All modules)"
-            echo "4) Custom      - Choose modules manually"
-            echo ""
+    while true; do
+        local choice
+        read -r -p "Select preset [1-4/Q]: " choice
+        choice="$(echo "${choice}" | tr '[:upper:]' '[:lower:]')"
 
-            while true; do
-                read -p "Select preset (1-4): " -r choice
-                case "$choice" in
-                    1) echo "minimal"; return 0 ;;
-                    2) echo "developer"; return 0 ;;
-                    3) echo "full"; return 0 ;;
-                    4) echo "custom"; return 0 ;;
-                    *) echo "Invalid choice. Please enter 1-4." ;;
-                esac
-            done
-            ;;
-    esac
+        case "$choice" in
+            1|minimal|m) echo "minimal"; return 0 ;;
+            2|developer|dev|d) echo "developer"; return 0 ;;
+            3|full|f) echo "full"; return 0 ;;
+            4|custom|c) echo "custom"; return 0 ;;
+            q|quit) return 1 ;;
+            *) echo "Invalid choice. Enter 1-4 or Q." ;;
+        esac
+    done
 }
 
 #
-# Show module selection menu (checkbox style)
+# Show module selection menu (fast CLI)
 #
 # Arguments:
 #   $@ - Array of available modules
@@ -156,69 +93,103 @@ show_preset_menu() {
 #
 show_module_menu() {
     local -a available_modules=("$@")
-    local title="Module Selection"
-    local message="Select modules to install (use SPACE to select/deselect):"
+    local count=${#available_modules[@]}
 
-    # Build menu items array for dialog/whiptail
-    # Format: "module_name" "Description" "on/off"
-    local -a menu_items=()
+    echo ""
+    echo "Custom module selection"
+    echo "Enter numbers or names separated by spaces or commas."
+    echo "Examples: 1 2 5   or   python,nodejs,dev-tools"
+    echo "Type 'all' for everything, or 'q' to cancel."
+    echo ""
 
+    local i=1
     for module in "${available_modules[@]}"; do
         local description
         description=$(get_module_description "$module")
-
-        # System-deps is always required and preselected
         if [[ "$module" == "system-deps" ]]; then
-            menu_items+=("$module" "$description" "on")
+            printf "%2d) %-18s - %s (required)\n" "$i" "$module" "$description"
         else
-            menu_items+=("$module" "$description" "off")
+            printf "%2d) %-18s - %s\n" "$i" "$module" "$description"
         fi
+        i=$((i + 1))
     done
 
-    case "$UI_MODE" in
-        dialog)
-            dialog --title "$title" \
-                   --checklist "$message" 20 70 10 \
-                   "${menu_items[@]}" \
-                   2>&1 >/dev/tty | tr -d '"'
-            ;;
-        whiptail)
-            whiptail --title "$title" \
-                     --checklist "$message" 20 70 10 \
-                     "${menu_items[@]}" \
-                     3>&1 1>&2 2>&3 | tr -d '"'
-            ;;
-        simple)
-            echo ""
-            echo "═══ Module Selection ═══"
-            echo ""
+    echo ""
 
-            local -a selected=()
-            local index=1
+    while true; do
+        local input
+        read -r -p "Modules to install: " input
+        input="$(echo "${input}" | tr ',' ' ')"
 
-            for module in "${available_modules[@]}"; do
-                local description
-                description=$(get_module_description "$module")
+        if [[ -z "$input" ]]; then
+            echo "Please select at least one module."
+            continue
+        fi
 
-                echo "$index) $module - $description"
+        if [[ "$input" == "q" || "$input" == "Q" ]]; then
+            return 1
+        fi
 
-                if [[ "$module" == "system-deps" ]]; then
-                    selected+=("$module")
-                    echo "   [REQUIRED - Auto-selected]"
-                else
-                    read -p "   Install this module? (y/N): " -r choice
-                    if [[ "$choice" =~ ^[Yy]$ ]]; then
-                        selected+=("$module")
-                    fi
+        local -a selected=()
+        local valid=true
+
+        for token in $input; do
+            local item="$token"
+            item="$(echo "${item}" | tr '[:upper:]' '[:lower:]')"
+
+            if [[ "$item" == "all" ]]; then
+                echo "${available_modules[*]}"
+                return 0
+            fi
+
+            if [[ "$item" =~ ^[0-9]+$ ]]; then
+                if (( item < 1 || item > count )); then
+                    echo "Invalid index: $item"
+                    valid=false
+                    break
                 fi
+                local module_name="${available_modules[$((item - 1))]}"
+                if ! array_contains "$module_name" "${selected[@]}"; then
+                    selected+=("$module_name")
+                fi
+            else
+                if ! array_contains "$item" "${available_modules[@]}"; then
+                    echo "Unknown module: $item"
+                    valid=false
+                    break
+                fi
+                if ! array_contains "$item" "${selected[@]}"; then
+                    selected+=("$item")
+                fi
+            fi
+        done
 
-                echo ""
-                index=$((index + 1))
-            done
+        if [[ "$valid" != "true" ]]; then
+            echo "Try again."
+            continue
+        fi
 
-            echo "${selected[*]}"
-            ;;
-    esac
+        # Always include system-deps
+        if ! array_contains "system-deps" "${selected[@]}"; then
+            selected=("system-deps" "${selected[@]}")
+        fi
+
+        # Preserve module order from available_modules
+        local -a ordered=()
+        for module in "${available_modules[@]}"; do
+            if array_contains "$module" "${selected[@]}"; then
+                ordered+=("$module")
+            fi
+        done
+
+        if [[ ${#ordered[@]} -eq 0 ]]; then
+            echo "No modules selected."
+            continue
+        fi
+
+        echo "${ordered[*]}"
+        return 0
+    done
 }
 
 #
@@ -292,71 +263,31 @@ get_preset_modules() {
 #
 confirm_installation() {
     local -a modules=("$@")
-    local title="Installation Summary"
 
-    local message="The following modules will be installed:
+    echo ""
+    echo "Installation summary:"
+    echo ""
 
-"
     for module in "${modules[@]}"; do
         local desc
         desc=$(get_module_description "$module")
-        message+="• $module - $desc
-"
+        echo "- $module: $desc"
     done
 
-    message+="
-Total modules: ${#modules[@]}
+    echo ""
+    echo "Total modules: ${#modules[@]}"
+    echo "Estimated time: ~5-15 minutes"
+    echo ""
 
-Estimated time: ~5-15 minutes (depending on selections)
-"
-
-    case "$UI_MODE" in
-        dialog)
-            if dialog --title "$title" \
-                      --yesno "$message" 20 70; then
-                return 0
-            else
-                return 1
-            fi
-            ;;
-        whiptail)
-            if whiptail --title "$title" \
-                        --yesno "$message" 20 70; then
-                return 0
-            else
-                return 1
-            fi
-            ;;
-        simple)
-            echo ""
-            echo "═══════════════════════════════════════════════════════"
-            echo "  Installation Summary"
-            echo "═══════════════════════════════════════════════════════"
-            echo ""
-            echo "The following modules will be installed:"
-            echo ""
-
-            for module in "${modules[@]}"; do
-                local desc
-                desc=$(get_module_description "$module")
-                echo "  • $module - $desc"
-            done
-
-            echo ""
-            echo "Total modules: ${#modules[@]}"
-            echo "Estimated time: ~5-15 minutes"
-            echo ""
-
-            while true; do
-                read -p "Proceed with installation? (y/N): " -r choice
-                case "$choice" in
-                    [Yy]*) return 0 ;;
-                    [Nn]*|"") return 1 ;;
-                    *) echo "Please answer y or n." ;;
-                esac
-            done
-            ;;
-    esac
+    while true; do
+        local choice
+        read -r -p "Proceed with installation? (y/N): " choice
+        case "$choice" in
+            [Yy]*) return 0 ;;
+            [Nn]*|"") return 1 ;;
+            *) echo "Please answer y or n." ;;
+        esac
+    done
 }
 
 #
@@ -367,7 +298,6 @@ Estimated time: ~5-15 minutes (depending on selections)
 #
 show_module_details() {
     local module="$1"
-    local title="Module Details: $module"
 
     local description
     description=$(get_module_description "$module")
@@ -378,35 +308,13 @@ show_module_details() {
     local size
     size=$(get_module_size "$module")
 
-    local message="Description:
-$description
-
-Dependencies:
-$deps
-
-Estimated size: $size
-"
-
-    case "$UI_MODE" in
-        dialog)
-            dialog --title "$title" \
-                   --msgbox "$message" 15 60
-            ;;
-        whiptail)
-            whiptail --title "$title" \
-                     --msgbox "$message" 15 60
-            ;;
-        simple)
-            echo ""
-            echo "═══ Module Details: $module ═══"
-            echo ""
-            echo "Description: $description"
-            echo "Dependencies: $deps"
-            echo "Estimated size: $size"
-            echo ""
-            read -p "Press Enter to continue..." -r
-            ;;
-    esac
+    echo ""
+    echo "Module: $module"
+    echo "Description: $description"
+    echo "Dependencies: $deps"
+    echo "Estimated size: $size"
+    echo ""
+    read -r -p "Press Enter to continue..." _
 }
 
 #
@@ -470,6 +378,21 @@ get_module_size() {
         productivity-tools) echo "~100MB" ;;
         *) echo "Unknown" ;;
     esac
+}
+
+#
+# Helpers
+#
+array_contains() {
+    local seeking="$1"
+    shift
+    local item
+    for item in "$@"; do
+        if [[ "$item" == "$seeking" ]]; then
+            return 0
+        fi
+    done
+    return 1
 }
 
 # Export functions

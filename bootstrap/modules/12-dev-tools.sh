@@ -162,6 +162,8 @@ install() {
 validate() {
     log_progress "Validating Development Tools installation"
 
+    export PATH="$HOME/.local/npm-global/bin:$PATH"
+
     local all_valid=true
 
     # Check pnpm

@@ -248,6 +248,20 @@ get_installed_version() {
     fi
 }
 
+# Get list of installed modules from state file
+get_installed_modules() {
+    if [[ ! -f "$STATE_FILE" ]]; then
+        return 1
+    fi
+
+    # Extract module names under the "modules:" section
+    awk '
+        $1 == "modules:" { in=1; next }
+        in && $0 ~ /^  [a-zA-Z0-9_-]+:/ { gsub(":", "", $1); print $1 }
+        in && $0 ~ /^[^ ]/ { in=0 }
+    ' "$STATE_FILE"
+}
+
 # Update state file with module installation
 update_state() {
     local module="$1"
@@ -414,7 +428,20 @@ validate_installation() {
 
     local all_valid=true
     local modules
-    modules=($(discover_modules))
+    modules=()
+
+    if [[ ${#SELECTED_MODULES[@]} -gt 0 ]]; then
+        modules=("${SELECTED_MODULES[@]}")
+    else
+        if [[ -f "$STATE_FILE" ]]; then
+            mapfile -t modules < <(get_installed_modules || true)
+        fi
+
+        if [[ ${#modules[@]} -eq 0 ]]; then
+            log_warn "No installed modules found; validating all modules"
+            modules=($(discover_modules))
+        fi
+    fi
 
     for module in "${modules[@]}"; do
         local module_file
@@ -700,14 +727,7 @@ main() {
 
             if ! install_module "$module"; then
                 failed_modules+=("$module")
-
-                if [[ "$NON_INTERACTIVE" == "false" ]]; then
-                    read -r -p "Continue despite failure? [y/N] " response
-                    if [[ ! "$response" =~ ^[Yy]$ ]]; then
-                        log_error "Installation aborted"
-                        exit 1
-                    fi
-                fi
+                log_warn "Continuing with remaining modules..."
             fi
         fi
     done
@@ -726,9 +746,17 @@ main() {
     fi
     echo ""
     log_info "Next steps:"
-    echo "  1. Configure API keys in ~/openclaw-workspace/.env"
-    echo "  2. Authenticate CLI tools (claude login, etc.)"
-    echo "  3. Test memory system: cd ~/openclaw-workspace && python tools/memory/memory_read.py"
+    echo ""
+    echo "  First, reload your shell to enable commands:"
+    echo "     source ~/.bashrc"
+    echo ""
+    echo "  Then run the setup wizard:"
+    echo "     openclaw-setup              # Configure API keys"
+    echo "     openclaw-auth --all         # Authenticate CLIs"
+    echo "     openclaw-validate           # Verify everything works"
+    echo ""
+    echo "  Or run directly without reloading:"
+    echo "     bash ~/openclaw-config/bootstrap/scripts/openclaw-setup.sh"
     echo ""
     log_info "For help: $0 --help"
 }

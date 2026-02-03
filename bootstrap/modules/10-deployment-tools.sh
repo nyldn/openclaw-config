@@ -83,13 +83,37 @@ install() {
         return 1
     fi
 
-    # Install Supabase CLI
+    # Install Supabase CLI (binary download - npm global install no longer supported)
     log_progress "Installing Supabase CLI"
-    if npm install -g supabase --silent 2>/dev/null; then
-        log_success "Supabase CLI installed"
-    else
-        log_error "Failed to install Supabase CLI"
-        return 1
+    
+    local install_dir="$HOME/.local/npm-global/bin"
+    mkdir -p "$install_dir"
+    
+    local arch os_name supabase_installed=false
+    os_name="$(uname -s | tr '[:upper:]' '[:lower:]')"
+    case "$(uname -m)" in
+        x86_64)       arch="amd64" ;;
+        aarch64|arm64) arch="arm64" ;;
+        *)            arch="" ;;
+    esac
+    
+    if [[ -n "$arch" && "$os_name" =~ ^(linux|darwin)$ ]]; then
+        local url="https://github.com/supabase/cli/releases/latest/download/supabase_${os_name}_${arch}.tar.gz"
+        local tmp_dir
+        tmp_dir=$(mktemp -d)
+        
+        if curl -fsSL "$url" -o "$tmp_dir/supabase.tar.gz" 2>/dev/null && \
+           tar -xzf "$tmp_dir/supabase.tar.gz" -C "$tmp_dir" 2>/dev/null && \
+           mv "$tmp_dir/supabase" "$install_dir/supabase" 2>/dev/null; then
+            chmod +x "$install_dir/supabase"
+            supabase_installed=true
+            log_success "Supabase CLI installed"
+        fi
+        rm -rf "$tmp_dir"
+    fi
+    
+    if [[ "$supabase_installed" == "false" ]]; then
+        log_warn "Supabase CLI installation skipped (use 'npx supabase' or install via brew)"
     fi
 
     # Install MCP configuration
@@ -155,6 +179,8 @@ install() {
 # Validate installation
 validate() {
     log_progress "Validating Deployment Tools installation"
+
+    export PATH="$HOME/.local/npm-global/bin:$PATH"
 
     local all_valid=true
 

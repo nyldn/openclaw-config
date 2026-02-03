@@ -43,9 +43,24 @@ check_installed() {
     fi
 }
 
+# Detect if running in a container (Docker, Podman, etc.)
+is_container() {
+    [[ -f /.dockerenv ]] || \
+    [[ -f /run/.containerenv ]] || \
+    grep -qE '(docker|lxc|containerd|kubepods)' /proc/1/cgroup 2>/dev/null || \
+    [[ "$(cat /proc/1/sched 2>/dev/null | head -1)" =~ "bash|sh" ]]
+}
+
 # Install the module
 install() {
     log_section "Installing Auto-Update System"
+
+    if is_container; then
+        log_warn "Container environment detected - systemd not available"
+        log_info "Auto-updates require systemd and are skipped in containers"
+        log_info "Run updates manually: ~/openclaw-config/bootstrap/scripts/auto-update.sh"
+        return 0
+    fi
 
     # Create log directory
     log_progress "Creating log directory: $LOG_DIR"
@@ -159,6 +174,17 @@ install() {
 # Validate installation
 validate() {
     log_progress "Validating Auto-Update System installation"
+
+    if is_container; then
+        log_info "Container environment - systemd components skipped"
+        if [[ -x "$UPDATE_SCRIPT" ]]; then
+            log_success "Update script is available for manual use"
+            return 0
+        else
+            log_error "Update script not found"
+            return 1
+        fi
+    fi
 
     local all_valid=true
 

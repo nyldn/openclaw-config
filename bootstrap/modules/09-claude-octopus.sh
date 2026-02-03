@@ -45,6 +45,8 @@ check_installed() {
 install() {
     log_section "Installing Claude Octopus Plugin"
 
+    export PATH="$HOME/.local/npm-global/bin:$HOME/.local/bin:$PATH"
+
     # Verify Claude CLI is available
     if ! validate_command "claude"; then
         log_error "Claude CLI is not installed. Please install claude-cli module first."

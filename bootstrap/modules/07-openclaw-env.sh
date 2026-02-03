@@ -208,6 +208,32 @@ EOF
         cd - > /dev/null || return 1
     fi
 
+    # Install openclaw aliases
+    log_progress "Installing openclaw shell aliases"
+
+    local ALIASES_FILE="$(dirname "$(dirname "$SCRIPT_DIR")")/bootstrap/aliases/openclaw-aliases.sh"
+    local SHELL_RC="$HOME/.bashrc"
+
+    if [[ -f "$HOME/.zshrc" ]]; then
+        SHELL_RC="$HOME/.zshrc"
+    fi
+
+    if [[ -f "$ALIASES_FILE" ]]; then
+        if grep -q "# OpenClaw VM - Core Aliases" "$SHELL_RC" 2>/dev/null; then
+            log_info "Openclaw aliases already installed in $SHELL_RC"
+        else
+            log_progress "Adding openclaw aliases to $SHELL_RC"
+            {
+                echo ""
+                echo "# OpenClaw VM - Core Aliases"
+                echo "source $ALIASES_FILE"
+            } >> "$SHELL_RC"
+            log_success "Shell aliases installed"
+        fi
+    else
+        log_warn "Openclaw aliases file not found, skipping"
+    fi
+
     log_success "OpenClaw environment setup complete"
     log_info "Workspace location: $WORKSPACE_DIR"
 
