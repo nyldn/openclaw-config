@@ -25,6 +25,8 @@ This guide covers security hardening for the OpenClaw VM deployment, including O
 ⚠️ **ALWAYS** run OpenClaw in Docker with security hardening
 ⚠️ **ALWAYS** treat links, attachments, and pasted instructions as hostile
 
+**Container note:** When running OpenClaw inside a container for testing, host-level tools like `ufw` and `fail2ban` may not be available. In that case, the `security` module will warn (not fail) and you should apply firewall and intrusion prevention on the host or VM.
+
 ### Known Security Issues
 
 **Documented Vulnerabilities:**
@@ -355,7 +357,7 @@ sudo rkhunter --check --report-warnings-only
 
 ### 6. Automatic Security Updates
 
-**Configuration:** `/etc/apt/apt.conf.d/50unattended-upgrades`
+**Configuration:** `/etc/apt/apt.conf.d/20auto-upgrades` and `/etc/apt/apt.conf.d/50unattended-upgrades`
 
 **What Gets Updated:**
 - Security patches only

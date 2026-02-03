@@ -17,12 +17,14 @@ Automated configuration and deployment system for OpenClaw VMs with comprehensiv
 **Recommended Method (Secure):**
 
 ```bash
-# Clone the repository
-git clone https://github.com/nyldn/openclaw-config.git
-cd openclaw-config/bootstrap
+# One-line install (clone + run)
+git clone https://github.com/nyldn/openclaw-config.git && cd openclaw-config/bootstrap && ./bootstrap.sh
+```
 
-# Run the interactive installer
-./bootstrap.sh
+**Alternative One-Line (Download + Run):**
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/nyldn/openclaw-config/main/bootstrap/install.sh -o /tmp/openclaw-install.sh && bash /tmp/openclaw-install.sh
 ```
 
 The installer will:
@@ -30,6 +32,7 @@ The installer will:
 - ✅ Show an interactive module selection menu
 - ✅ Install only the components you choose
 - ✅ Complete in ~5-15 minutes depending on selections
+- ✅ Automatically run post-install setup and auth wizards
 
 **Non-Interactive Mode:**
 
@@ -41,6 +44,9 @@ For automated installations (CI/CD, scripts):
 
 # Install specific modules only
 ./bootstrap.sh --only system-deps,nodejs,python
+
+# Skip the post-install wizard
+./bootstrap.sh --skip-setup
 ```
 
 See [docs/INSTALLATION.md](docs/INSTALLATION.md) for detailed installation options and customization.
@@ -54,6 +60,14 @@ See [docs/INSTALLATION.md](docs/INSTALLATION.md) for detailed installation optio
 - **OpenAI CLI** - GPT-4 and GPT-3.5 access
 - **Gemini CLI** - Run via `npx @google/gemini-cli` (see https://github.com/google-gemini/gemini-cli)
 - **Claude Octopus** - Multi-AI orchestration system
+
+**Claude Code CLI install notes:**
+- macOS: `brew install --cask claude-code`
+- Linux: `curl -fsSL https://claude.ai/install.sh -o /tmp/claude-install.sh && bash /tmp/claude-install.sh`
+- Node.js 18+ only required for deprecated npm install flows
+- `ripgrep` is usually included; if `claude` search fails, see Claude search troubleshooting
+Claude Octopus requires the Claude CLI; if it isn't installed yet, rerun later with:
+`./bootstrap.sh --only claude-cli,claude-octopus`
 
 ### Deployment Platforms
 - **Vercel CLI** - Serverless and edge deployments
@@ -212,6 +226,13 @@ openclaw-config/
 ```
 
 ### Post-Installation
+
+The installer launches a post-install wizard by default. If you skip it, run:
+
+```bash
+bash ~/openclaw-config/bootstrap/scripts/openclaw-setup.sh
+bash ~/openclaw-config/bootstrap/scripts/openclaw-auth.sh --all
+```
 
 1. **Configure API Keys**
    ```bash

@@ -21,6 +21,20 @@ SSH_CONFIG="/etc/ssh/sshd_config"
 UFW_RULES="/etc/ufw/user.rules"
 SECURITY_DIR="$HOME/.openclaw-security"
 
+# Detect if running inside a container
+is_container() {
+    [[ -f "/.dockerenv" ]] && return 0
+    [[ -f "/run/systemd/container" ]] && return 0
+    grep -qaE 'docker|containerd|kubepods|lxc' /proc/1/cgroup 2>/dev/null && return 0
+    return 1
+}
+
+# Detect if systemd is running as PID 1
+has_systemd() {
+    command -v systemctl &>/dev/null || return 1
+    [[ "$(ps -p 1 -o comm= 2>/dev/null)" == "systemd" ]]
+}
+
 # Check if module is already installed
 check_installed() {
     log_debug "Checking if $MODULE_NAME is installed"
@@ -131,25 +145,28 @@ install() {
 
     # Configure UFW (firewall)
     log_progress "Configuring UFW firewall..."
+    if is_container; then
+        log_warn "Container detected; skipping UFW firewall configuration"
+    else
+        # Set default policies
+        sudo ufw --force reset >/dev/null 2>&1
+        sudo ufw default deny incoming
+        sudo ufw default allow outgoing
 
-    # Set default policies
-    sudo ufw --force reset >/dev/null 2>&1
-    sudo ufw default deny incoming
-    sudo ufw default allow outgoing
+        # Allow SSH (current port)
+        local ssh_port
+        ssh_port=$(grep "^Port" "$SSH_CONFIG" | awk '{print $2}' || echo "22")
+        sudo ufw allow "$ssh_port"/tcp comment 'SSH'
 
-    # Allow SSH (current port)
-    local ssh_port
-    ssh_port=$(grep "^Port" "$SSH_CONFIG" | awk '{print $2}' || echo "22")
-    sudo ufw allow "$ssh_port"/tcp comment 'SSH'
+        # Allow common development ports (localhost only where possible)
+        sudo ufw allow 3000/tcp comment 'Development Server'
+        sudo ufw allow 5432/tcp comment 'PostgreSQL'
+        sudo ufw allow 8000/tcp comment 'Alternative Dev Server'
 
-    # Allow common development ports (localhost only where possible)
-    sudo ufw allow 3000/tcp comment 'Development Server'
-    sudo ufw allow 5432/tcp comment 'PostgreSQL'
-    sudo ufw allow 8000/tcp comment 'Alternative Dev Server'
-
-    # Enable UFW
-    sudo ufw --force enable
-    log_success "UFW firewall configured and enabled"
+        # Enable UFW
+        sudo ufw --force enable
+        log_success "UFW firewall configured and enabled"
+    fi
 
     # Configure fail2ban
     log_progress "Configuring fail2ban..."
@@ -172,9 +189,13 @@ maxretry = 3
 EOF
 
     # Start fail2ban
-    sudo systemctl enable fail2ban
-    sudo systemctl restart fail2ban
-    log_success "fail2ban configured and started"
+    if has_systemd; then
+        sudo systemctl enable fail2ban
+        sudo systemctl restart fail2ban
+        log_success "fail2ban configured and started"
+    else
+        log_warn "systemd not available; skipping fail2ban service start"
+    fi
 
     # Initialize AIDE (File Integrity Monitoring)
     log_progress "Initializing AIDE database (this may take a few minutes)..."
@@ -199,6 +220,14 @@ EOF
     # Configure automatic security updates
     log_progress "Configuring automatic security updates..."
 
+    # Enable unattended upgrades without any debconf prompts
+    sudo tee /etc/apt/apt.conf.d/20auto-upgrades >/dev/null <<'EOF'
+APT::Periodic::Update-Package-Lists "1";
+APT::Periodic::Unattended-Upgrade "1";
+APT::Periodic::Download-Upgradeable-Packages "1";
+APT::Periodic::AutocleanInterval "7";
+EOF
+
     sudo tee /etc/apt/apt.conf.d/50unattended-upgrades >/dev/null <<EOF
 Unattended-Upgrade::Allowed-Origins {
     "\${distro_id}:\${distro_codename}-security";
@@ -210,8 +239,12 @@ Unattended-Upgrade::Remove-Unused-Dependencies "true";
 Unattended-Upgrade::Automatic-Reboot "false";
 EOF
 
-    sudo dpkg-reconfigure -plow unattended-upgrades
-    log_success "Automatic security updates configured"
+    # Enable timers if systemd is available (ignore errors in containers)
+    if command -v systemctl &>/dev/null; then
+        sudo systemctl enable --now apt-daily.timer apt-daily-upgrade.timer >/dev/null 2>&1 || true
+    fi
+
+    log_success "Automatic security updates configured (noninteractive)"
 
     # Create security monitoring script
     log_progress "Creating security monitoring script..."
@@ -315,10 +348,15 @@ validate() {
     log_progress "Validating VM Security Hardening"
 
     local all_valid=true
+    local in_container=false
+    if is_container; then
+        in_container=true
+        log_warn "Container detected; service checks will be warnings"
+    fi
 
     # Check fail2ban
     if command -v fail2ban-client &>/dev/null; then
-        if sudo systemctl is-active fail2ban &>/dev/null; then
+        if has_systemd && sudo systemctl is-active fail2ban &>/dev/null; then
             log_success "fail2ban is running"
 
             # Check banned IPs
@@ -326,12 +364,20 @@ validate() {
             banned_count=$(sudo fail2ban-client status sshd 2>/dev/null | grep "Currently banned" | awk '{print $4}')
             log_info "Currently banned IPs: ${banned_count:-0}"
         else
-            log_error "fail2ban is not running"
-            all_valid=false
+            if [[ "$in_container" == "true" ]]; then
+                log_warn "fail2ban is not running (container/systemd unavailable)"
+            else
+                log_error "fail2ban is not running"
+                all_valid=false
+            fi
         fi
     else
-        log_error "fail2ban not installed"
-        all_valid=false
+        if [[ "$in_container" == "true" ]]; then
+            log_warn "fail2ban not installed (container)"
+        else
+            log_error "fail2ban not installed"
+            all_valid=false
+        fi
     fi
 
     # Check UFW
@@ -339,12 +385,20 @@ validate() {
         if sudo ufw status | grep -q "Status: active"; then
             log_success "UFW firewall is active"
         else
-            log_error "UFW firewall is not active"
-            all_valid=false
+            if [[ "$in_container" == "true" ]]; then
+                log_warn "UFW firewall is not active (container)"
+            else
+                log_error "UFW firewall is not active"
+                all_valid=false
+            fi
         fi
     else
-        log_error "UFW not installed"
-        all_valid=false
+        if [[ "$in_container" == "true" ]]; then
+            log_warn "UFW not installed (container)"
+        else
+            log_error "UFW not installed"
+            all_valid=false
+        fi
     fi
 
     # Check AIDE
@@ -355,8 +409,12 @@ validate() {
             log_warn "AIDE database not found (run aideinit)"
         fi
     else
-        log_error "AIDE not installed"
-        all_valid=false
+        if [[ "$in_container" == "true" ]]; then
+            log_warn "AIDE not installed (container)"
+        else
+            log_error "AIDE not installed"
+            all_valid=false
+        fi
     fi
 
     # Check SSH hardening

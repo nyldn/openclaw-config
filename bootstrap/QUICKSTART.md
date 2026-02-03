@@ -274,7 +274,7 @@ claude
 
 1. **Test on Fresh VM**: Deploy to a clean Debian VM to verify installation
 2. **Update URLs**: Replace placeholder GitHub URLs with actual repository
-3. **Add Atlas Files**: Ensure `atlas_framework/` directory has required files
+3. **Workspace Files**: Add any project-specific files you want in the workspace
 4. **Create First Project**: Use GOTCHA framework to build something!
 5. **Explore Octopus**: Try different personas and workflows
 

@@ -91,12 +91,31 @@ install() {
         # Linux installation
         log_info "Installing Doppler CLI for Linux..."
 
-        if curl -Ls --tlsv1.2 --proto "=https" --retry 3 https://cli.doppler.com/install.sh | sh 2>&1 | tee -a /tmp/doppler-install.log; then
-            log_success "Doppler CLI installed"
+        local doppler_script
+        doppler_script=$(mktemp)
+        trap 'rm -f "$doppler_script"' RETURN
+
+        if curl -Ls --tlsv1.2 --proto "=https" --retry 3 https://cli.doppler.com/install.sh -o "$doppler_script"; then
+            if [[ "${EUID:-$(id -u)}" -eq 0 ]]; then
+                if sh "$doppler_script" 2>&1 | tee -a /tmp/doppler-install.log; then
+                    log_success "Doppler CLI installed"
+                else
+                    log_warn "Failed to install Doppler CLI (optional tool)"
+                fi
+            elif command -v sudo &>/dev/null; then
+                if sudo sh "$doppler_script" 2>&1 | tee -a /tmp/doppler-install.log; then
+                    log_success "Doppler CLI installed"
+                else
+                    log_warn "Failed to install Doppler CLI (optional tool)"
+                fi
+            else
+                log_warn "Doppler install requires sudo/root; sudo not available"
+            fi
         else
-            log_warn "Failed to install Doppler CLI (optional tool)"
-            log_info "You can install manually later with: curl -Ls https://cli.doppler.com/install.sh | sh"
+            log_warn "Failed to download Doppler installer (optional tool)"
         fi
+
+        log_info "Manual install (Linux): curl -Ls https://cli.doppler.com/install.sh -o /tmp/doppler.sh && sudo sh /tmp/doppler.sh"
 
     elif [[ "$OSTYPE" == "darwin"* ]]; then
         # macOS installation

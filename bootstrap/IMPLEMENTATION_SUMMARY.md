@@ -121,14 +121,14 @@ bootstrap/
 
 ```
 ~/openclaw-workspace/
-├── CLAUDE.md                 (copied from atlas_framework)
+├── CLAUDE.md                 (optional workspace file)
 ├── .env                      (from template)
 ├── .gitignore                (generated)
 ├── goals/
-│   └── build_app.md          (copied from atlas_framework)
+│   └── build_app.md          (optional workspace file)
 ├── tools/
 │   ├── manifest.md           (generated)
-│   └── memory/               (copied from atlas_framework)
+│   └── memory/               (user-provided tools)
 ├── context/
 ├── hardprompts/
 ├── args/
@@ -206,9 +206,9 @@ Replace placeholder URLs in:
 
 ### 2. Add Atlas Framework Files
 Ensure these files exist in the repository:
-- `atlas_framework/CLAUDE.md`
-- `atlas_framework/build_app.md`
-- `atlas_framework/memory/*.py` (memory tools)
+- `CLAUDE.md`
+- `build_app.md`
+- `tools/memory/*.py` (memory tools)
 
 ### 3. Test on Fresh VM
 ```bash
