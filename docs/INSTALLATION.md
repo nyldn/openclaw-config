@@ -22,8 +22,8 @@ cd openclaw-config/bootstrap
 **What this does:**
 1. Verifies prerequisites (git, curl, bash)
 2. Shows an interactive menu to select modules
-3. Installs to `~/openclaw-config`
-4. Only installs the components you choose
+3. Installs only the components you choose
+4. Uses the repo in-place (no copy/move)
 5. Takes ~5-15 minutes depending on selections
 
 **Time:** ~5-15 minutes (depending on selections and internet speed)
@@ -93,7 +93,7 @@ bash modules/04-claude-cli.sh validate
 # 03-nodejs.sh           - Node.js runtime
 # 04-claude-cli.sh       - Claude Code CLI
 # 05-codex-cli.sh        - OpenAI CLI
-# 06-gemini-cli.sh       - Gemini CLI
+# 06-gemini-cli.sh       - Gemini CLI (npx @google/gemini-cli)
 # 07-openclaw-env.sh     - OpenClaw workspace
 # 08-memory-init.sh      - Memory system
 # 09-claude-octopus.sh   - Multi-AI orchestration
@@ -102,6 +102,7 @@ bash modules/04-claude-cli.sh validate
 # 12-dev-tools.sh        - pnpm, Biome, Doppler
 # 13-openclaw.sh         - OpenClaw.ai installation
 # 14-security.sh         - VM security hardening
+# 15-productivity-tools.sh - Calendar, Email, Tasks, Slack
 ```
 
 ---
@@ -145,7 +146,7 @@ sudo apt-get install -y git curl bash sudo
 - SDKs: anthropic, openai, google-generativeai
 
 ### Node.js Environment
-- Node.js 22+ LTS
+- Node.js 20+ LTS
 - npm and global packages directory
 - CLI tools: Vercel, Netlify, Supabase
 
@@ -159,9 +160,11 @@ sudo apt-get install -y git curl bash sudo
 ### AI Tools
 - Claude Code CLI
 - OpenAI CLI (Codex)
-- Gemini CLI
+- Gemini CLI (via `npx @google/gemini-cli`)
 - OpenClaw.ai
 - Claude Octopus (multi-AI orchestration)
+
+Gemini CLI reference: https://github.com/google-gemini/gemini-cli
 
 ### Security Features
 - SSH hardening (key-only auth, no root)
@@ -226,8 +229,14 @@ sudo apt-get install -y git curl bash sudo
    - 14: Security hardening
 
 5. **Cleanup**
-   - Removes temporary files
    - Displays installation summary
+
+> Note: If you use `bootstrap/install.sh`, it clones to a temp directory and copies into `~/openclaw-config`.
+
+The summary includes:
+- Selected modules and preset
+- Failed modules with per-module log paths
+- A ready-to-run retry command for failed modules
 
 ### Installation Locations
 
@@ -250,7 +259,7 @@ sudo apt-get install -y git curl bash sudo
 
 ```bash
 # Run validation
-cd ~/openclaw-config
+cd ~/openclaw-config/bootstrap
 ./bootstrap.sh --validate
 
 # Check installed versions
@@ -328,15 +337,21 @@ systemctl --user status openclaw-auto-update.timer
 ### Skip Modules
 
 ```bash
+# Download installer
+curl -fsSL https://raw.githubusercontent.com/nyldn/openclaw-config/main/bootstrap/install.sh -o /tmp/openclaw-install.sh
+
 # Don't install Gemini or Codex
-curl -fsSL https://raw.githubusercontent.com/nyldn/openclaw-config/main/bootstrap/install.sh | bash -s -- --skip gemini-cli,codex-cli
+bash /tmp/openclaw-install.sh --skip gemini-cli,codex-cli
 ```
 
 ### Install Only Specific Modules
 
 ```bash
+# Download installer
+curl -fsSL https://raw.githubusercontent.com/nyldn/openclaw-config/main/bootstrap/install.sh -o /tmp/openclaw-install.sh
+
 # Minimal installation
-curl -fsSL https://raw.githubusercontent.com/nyldn/openclaw-config/main/bootstrap/install.sh | bash -s -- --only system-deps,python,nodejs,claude-cli
+bash /tmp/openclaw-install.sh --only system-deps,python,nodejs,claude-cli
 ```
 
 ### Environment Variables
@@ -344,17 +359,12 @@ curl -fsSL https://raw.githubusercontent.com/nyldn/openclaw-config/main/bootstra
 Set before installation:
 
 ```bash
-# Custom installation directory
+# Custom installation directory (install.sh only)
 export INSTALL_DIR="$HOME/my-custom-dir"
 
-# Custom Python virtual environment
-export VENV_DIR="$HOME/.venv/my-env"
-
-# Custom npm global directory
-export NPM_GLOBAL_DIR="$HOME/.npm-packages"
-
 # Then run install
-curl -fsSL https://raw.githubusercontent.com/nyldn/openclaw-config/main/bootstrap/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/nyldn/openclaw-config/main/bootstrap/install.sh -o /tmp/openclaw-install.sh
+bash /tmp/openclaw-install.sh
 ```
 
 ---
@@ -365,7 +375,13 @@ curl -fsSL https://raw.githubusercontent.com/nyldn/openclaw-config/main/bootstra
 
 **Check logs:**
 ```bash
-tail -f ~/openclaw-config/logs/bootstrap-*.log
+tail -f ~/openclaw-config/bootstrap/logs/bootstrap-*.log
+```
+
+Per-module logs:
+```bash
+ls -1 ~/openclaw-config/bootstrap/logs/modules
+tail -f ~/openclaw-config/bootstrap/logs/modules/<run_id>/<module>.log
 ```
 
 **Common issues:**
@@ -396,16 +412,16 @@ tail -f ~/openclaw-config/logs/bootstrap-*.log
 
 4. **Permission denied**
    ```bash
-   # Ensure scripts are executable
-   chmod +x ~/openclaw-config/bootstrap.sh
-   chmod +x ~/openclaw-config/modules/*.sh
+# Ensure scripts are executable
+chmod +x ~/openclaw-config/bootstrap/bootstrap.sh
+chmod +x ~/openclaw-config/bootstrap/modules/*.sh
    ```
 
 ### Module-Specific Failures
 
 ```bash
 # Reinstall specific module
-cd ~/openclaw-config
+cd ~/openclaw-config/bootstrap
 bash modules/04-claude-cli.sh install
 
 # Validate module
@@ -425,7 +441,8 @@ rm -rf ~/.local/venv/openclaw
 rm -rf ~/.openclaw
 
 # Reinstall
-curl -fsSL https://raw.githubusercontent.com/nyldn/openclaw-config/main/bootstrap/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/nyldn/openclaw-config/main/bootstrap/install.sh -o /tmp/openclaw-install.sh
+bash /tmp/openclaw-install.sh
 ```
 
 ---
@@ -512,11 +529,11 @@ bash modules/10-deployment-tools.sh install
 
 ## 📚 Additional Resources
 
-- **Main README**: [README.md](README.md)
-- **Security Guide**: [SECURITY_GUIDE.md](SECURITY_GUIDE.md)
-- **Development Tools**: [DEV_TOOLS_GUIDE.md](DEV_TOOLS_GUIDE.md)
-- **Auto-Updates**: [bootstrap/AUTO_UPDATE_GUIDE.md](bootstrap/AUTO_UPDATE_GUIDE.md)
-- **Bootstrap System**: [bootstrap/README.md](bootstrap/README.md)
+- **Main README**: [../README.md](../README.md)
+- **Security Guide**: [guides/SECURITY_GUIDE.md](guides/SECURITY_GUIDE.md)
+- **Development Tools**: [guides/DEV_TOOLS_GUIDE.md](guides/DEV_TOOLS_GUIDE.md)
+- **Auto-Updates**: [../bootstrap/AUTO_UPDATE_GUIDE.md](../bootstrap/AUTO_UPDATE_GUIDE.md)
+- **Bootstrap System**: [../bootstrap/README.md](../bootstrap/README.md)
 
 ---
 
@@ -543,7 +560,8 @@ bash modules/10-deployment-tools.sh install
 
 **Installation Command:**
 ```bash
-curl -fsSL https://raw.githubusercontent.com/nyldn/openclaw-config/main/bootstrap/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/nyldn/openclaw-config/main/bootstrap/install.sh -o /tmp/openclaw-install.sh
+bash /tmp/openclaw-install.sh
 ```
 
-**Last Updated:** 2026-02-01
+**Last Updated:** 2026-02-03

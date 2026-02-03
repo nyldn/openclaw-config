@@ -10,8 +10,13 @@ declare -g -a SUMMARY_MODULES_SUCCESS=()
 declare -g -a SUMMARY_MODULES_FAILED=()
 declare -g -a SUMMARY_MODULES_SKIPPED=()
 declare -g -A SUMMARY_MODULE_TIMES=()
+declare -g -A SUMMARY_MODULE_LOGS=()
 declare -g SUMMARY_START_TIME=""
 declare -g SUMMARY_END_TIME=""
+declare -g SUMMARY_PRESET=""
+declare -g SUMMARY_SELECTED_MODULES=()
+declare -g SUMMARY_STATUS="completed"
+declare -g SUMMARY_STATUS_REASON=""
 
 #
 # Initialize summary tracking
@@ -22,6 +27,11 @@ summary_init() {
     SUMMARY_MODULES_FAILED=()
     SUMMARY_MODULES_SKIPPED=()
     declare -g -A SUMMARY_MODULE_TIMES=()
+    declare -g -A SUMMARY_MODULE_LOGS=()
+    SUMMARY_PRESET=""
+    SUMMARY_SELECTED_MODULES=()
+    SUMMARY_STATUS="completed"
+    SUMMARY_STATUS_REASON=""
 }
 
 #
@@ -85,6 +95,50 @@ summary_module_skipped() {
 }
 
 #
+# Record module log path
+#
+# Arguments:
+#   $1 - Module name
+#   $2 - Log file path
+#
+summary_module_log() {
+    local module="$1"
+    local log_path="$2"
+    SUMMARY_MODULE_LOGS["$module"]="$log_path"
+}
+
+#
+# Record preset selection (if any)
+#
+# Arguments:
+#   $1 - Preset name
+#
+summary_set_preset() {
+    SUMMARY_PRESET="$1"
+}
+
+#
+# Record selected modules
+#
+# Arguments:
+#   $@ - Module names
+#
+summary_set_selected_modules() {
+    SUMMARY_SELECTED_MODULES=("$@")
+}
+
+#
+# Mark summary as interrupted
+#
+# Arguments:
+#   $1 - Reason (e.g., SIGINT)
+#
+summary_set_interrupted() {
+    SUMMARY_STATUS="interrupted"
+    SUMMARY_STATUS_REASON="$1"
+}
+
+#
 # Format duration in human-readable form
 #
 # Arguments:
@@ -122,6 +176,18 @@ summary_show() {
     echo "" >&2
     log_section "Installation Summary"
 
+    if [[ "$SUMMARY_STATUS" != "completed" ]]; then
+        log_warn "Status: $SUMMARY_STATUS (${SUMMARY_STATUS_REASON})"
+    fi
+
+    if [[ -n "$SUMMARY_PRESET" ]]; then
+        log_info "Preset: $SUMMARY_PRESET"
+    fi
+
+    if [[ ${#SUMMARY_SELECTED_MODULES[@]} -gt 0 ]]; then
+        log_info "Selected modules: ${SUMMARY_SELECTED_MODULES[*]}"
+    fi
+
     # Success count
     if [[ ${#SUMMARY_MODULES_SUCCESS[@]} -gt 0 ]]; then
         log_success "Modules installed successfully (${#SUMMARY_MODULES_SUCCESS[@]}):"
@@ -141,8 +207,16 @@ summary_show() {
             local duration=${SUMMARY_MODULE_TIMES["${module}_duration"]:-0}
             local formatted
             formatted=$(format_duration "$duration")
-            echo "  ✗ $module ($formatted)" >&2
+            local module_log="${SUMMARY_MODULE_LOGS[$module]:-}"
+            if [[ -n "$module_log" ]]; then
+                echo "  ✗ $module ($formatted) - log: $module_log" >&2
+            else
+                echo "  ✗ $module ($formatted)" >&2
+            fi
         done
+        echo "" >&2
+        log_info "Retry failed modules:"
+        echo "  ./bootstrap.sh --only $(IFS=,; echo "${SUMMARY_MODULES_FAILED[*]}")" >&2
         echo "" >&2
     fi
 
@@ -184,7 +258,14 @@ summary_save() {
         echo "========================================"
         echo ""
         echo "Date: $(date)"
+        echo "Status: $SUMMARY_STATUS${SUMMARY_STATUS_REASON:+ (${SUMMARY_STATUS_REASON})}"
         echo "Total Duration: $(format_duration $((SUMMARY_END_TIME - SUMMARY_START_TIME)))"
+        if [[ -n "$SUMMARY_PRESET" ]]; then
+            echo "Preset: $SUMMARY_PRESET"
+        fi
+        if [[ ${#SUMMARY_SELECTED_MODULES[@]} -gt 0 ]]; then
+            echo "Selected Modules: ${SUMMARY_SELECTED_MODULES[*]}"
+        fi
         echo ""
 
         if [[ ${#SUMMARY_MODULES_SUCCESS[@]} -gt 0 ]]; then
@@ -200,8 +281,16 @@ summary_save() {
             echo "Failed (${#SUMMARY_MODULES_FAILED[@]}):"
             for module in "${SUMMARY_MODULES_FAILED[@]}"; do
                 local duration=${SUMMARY_MODULE_TIMES["${module}_duration"]:-0}
-                printf "  ✗ %-30s %s\n" "$module" "$(format_duration "$duration")"
+                local module_log="${SUMMARY_MODULE_LOGS[$module]:-}"
+                if [[ -n "$module_log" ]]; then
+                    printf "  ✗ %-30s %s (log: %s)\n" "$module" "$(format_duration "$duration")" "$module_log"
+                else
+                    printf "  ✗ %-30s %s\n" "$module" "$(format_duration "$duration")"
+                fi
             done
+            echo ""
+            echo "Retry Command:"
+            echo "  ./bootstrap.sh --only $(IFS=,; echo "${SUMMARY_MODULES_FAILED[*]}")"
             echo ""
         fi
 
@@ -221,6 +310,10 @@ export -f summary_module_start
 export -f summary_module_success
 export -f summary_module_failed
 export -f summary_module_skipped
+export -f summary_module_log
+export -f summary_set_preset
+export -f summary_set_selected_modules
+export -f summary_set_interrupted
 export -f summary_show
 export -f summary_save
 export -f format_duration

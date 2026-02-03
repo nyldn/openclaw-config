@@ -49,19 +49,12 @@ install() {
     mkdir -p "$CONFIG_DIR"
     log_success "Config directory created"
 
-    # Note: Gemini CLI may not have a standalone CLI tool yet
-    # The primary interface is through the Python SDK
-    log_info "Gemini primarily uses Python SDK for programmatic access"
+    # Gemini CLI is distributed via npx (no global install required)
+    log_info "Gemini CLI is available via: npx @google/gemini-cli"
+    log_info "Python SDK remains the primary programmatic interface"
 
-    # Try to install CLI if available (may not exist)
-    if command -v npm &>/dev/null; then
-        log_progress "Checking for Gemini CLI package"
-
-        if npm install -g @google/generative-ai-cli 2>/dev/null; then
-            log_success "Gemini CLI installed"
-        else
-            log_info "No standalone Gemini CLI available - using SDK and gcloud integration"
-        fi
+    if ! command -v npx &>/dev/null; then
+        log_warn "npx not found; Gemini CLI won't be available"
     fi
 
     # Install Gemini SDK
@@ -99,9 +92,11 @@ validate() {
 
     local all_valid=true
 
-    # Check Gemini CLI (optional - may not exist)
+    # Check Gemini CLI (optional)
     if validate_command "gemini"; then
         log_success "Gemini CLI found"
+    elif command -v npx &>/dev/null; then
+        log_info "Gemini CLI available via npx @google/gemini-cli"
     else
         log_info "Gemini CLI not found (optional - SDK is primary requirement)"
     fi
@@ -152,9 +147,9 @@ validate() {
 rollback() {
     log_warn "Rolling back Gemini installation"
 
-    # Uninstall CLI if installed
+    # Uninstall CLI if installed globally
     if command -v npm &>/dev/null; then
-        npm uninstall -g @google/generative-ai-cli 2>/dev/null || true
+        npm uninstall -g @google/gemini-cli 2>/dev/null || true
     fi
 
     # Remove config directory
