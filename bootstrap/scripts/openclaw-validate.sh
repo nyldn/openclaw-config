@@ -16,7 +16,7 @@ else
 fi
 
 CONFIG_DIR="$HOME/.openclaw"
-WORKSPACE_DIR="$HOME/openclaw-workspace"
+WORKSPACE_DIR="$HOME/.openclaw/workspace"
 ENV_FILE="$WORKSPACE_DIR/.env"
 VENV_DIR="$HOME/.local/venv/openclaw"
 
@@ -324,6 +324,21 @@ validate_environment() {
     fi
 }
 
+validate_openclaw_doctor() {
+    echo ""
+    echo "OpenClaw Doctor:"
+
+    if command -v openclaw &>/dev/null; then
+        if openclaw doctor 2>&1 | tee /tmp/openclaw-doctor.log | grep -qi "error\|fail\|critical"; then
+            fail "openclaw doctor reported issues (see /tmp/openclaw-doctor.log)"
+        else
+            pass "openclaw doctor passed"
+        fi
+    else
+        skip "openclaw CLI not installed"
+    fi
+}
+
 validate_mcp_servers() {
     echo ""
     echo "MCP Servers:"
@@ -459,6 +474,7 @@ main() {
         validate_slack
         validate_google_services
         validate_mcp_servers
+        validate_openclaw_doctor
     fi
     
     show_summary

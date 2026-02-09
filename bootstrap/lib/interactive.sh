@@ -220,7 +220,7 @@ get_module_description() {
     case "$module" in
         system-deps) echo "System dependencies (git, curl, build tools)" ;;
         python) echo "Python 3.9+ with virtual environment" ;;
-        nodejs) echo "Node.js 20+ with npm" ;;
+        nodejs) echo "Node.js 22+ with npm" ;;
         claude-cli) echo "Claude Code CLI (Anthropic)" ;;
         codex-cli) echo "OpenAI CLI (GPT-4, GPT-3.5)" ;;
         gemini-cli) echo "Google Gemini CLI" ;;

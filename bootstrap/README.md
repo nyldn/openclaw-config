@@ -46,8 +46,8 @@ cd openclaw-config/bootstrap
 - SDKs: Anthropic, OpenAI, Google Generative AI
 - Utilities: rank-bm25, pyyaml, python-dotenv
 
-### Node.js Environment (20+)
-- Node.js runtime and npm
+### Node.js Environment (22+)
+- Node.js 22 LTS runtime and npm (required by OpenClaw >=22.12.0)
 - Global packages directory at `~/.local/npm-global`
 
 ### LLM CLI Tools
@@ -70,15 +70,36 @@ cd openclaw-config/bootstrap
 - **Repository Updates**: Auto-pull from GitHub
 - **Cleanup**: Remove unused packages and caches
 
+### OpenClaw Skills
+
+Popular skills from [ClawHub](https://clawhub.com) (400+ downloads):
+
+- **ByteRover** (14,376): Project knowledge management through context trees
+- **Self-Improving Agent** (9,370): AI self-improvement capabilities
+- **Agent Browser** (4,765): Web browsing for agents
+- **Proactive Agent** (2,189): Proactive task automation
+- **Deep Research Agent** (1,630): Comprehensive research capabilities
+- **Memory Setup** (1,206): Memory management configuration
+- **Agent Browser 2** (1,135): Enhanced web browsing
+- **Second Brain** (783): Personal knowledge management
+- **Prompt Guard** (757): Prompt injection protection
+- **AgentMail** (708): Email integration
+- **Compound Engineering** (666): Complex engineering workflows
+- **Agent Browser 3** (561): Advanced web capabilities
+- **Exa** (522): Enhanced search capabilities
+- **Context7 MCP** (451): Context management protocol
+- **Ontology** (416): Knowledge graph management
+
 ### OpenClaw Workspace
 
-Creates `~/openclaw-workspace/` with GOTCHA structure:
+Creates `~/.openclaw/workspace/` with upstream template files and GOTCHA structure:
 
 ```
-openclaw-workspace/
-├── CLAUDE.md              # Main framework guide
+~/.openclaw/workspace/
+├── AGENTS.md              # Agent configurations (upstream)
+├── SOUL.md                # Agent personality guidelines (upstream)
+├── TOOLS.md               # Available tools documentation (upstream)
 ├── goals/                 # Goal definitions
-│   └── build_app.md
 ├── tools/                 # Available tools
 │   ├── manifest.md
 │   └── memory/            # Memory system tools
@@ -86,10 +107,8 @@ openclaw-workspace/
 ├── hardprompts/           # Reusable prompts
 ├── args/                  # Arguments and configs
 ├── memory/                # Memory files
-│   ├── MEMORY.md
 │   └── logs/              # Daily logs
 ├── data/                  # Databases and data
-│   └── memory.db
 └── .tmp/                  # Temporary files
 ```
 
@@ -153,10 +172,10 @@ openclaw-workspace/
 
 ### 1. Configure API Keys
 
-Edit `~/openclaw-workspace/.env`:
+Edit `~/.openclaw/workspace/.env`:
 
 ```bash
-nano ~/openclaw-workspace/.env
+nano ~/.openclaw/workspace/.env
 ```
 
 Add your API keys:
@@ -215,7 +234,7 @@ cd ~/openclaw-bootstrap
 ./bootstrap.sh --validate
 
 # Test memory system
-cd ~/openclaw-workspace
+cd ~/.openclaw/workspace
 python tools/memory/memory_read.py --format markdown
 python tools/memory/memory_write.py --content "Bootstrap completed" --type event
 ```
@@ -223,7 +242,7 @@ python tools/memory/memory_write.py --content "Bootstrap completed" --type event
 ### 5. Start Development
 
 ```bash
-cd ~/openclaw-workspace
+cd ~/.openclaw/workspace
 
 # Use Claude CLI
 claude
@@ -257,7 +276,14 @@ bootstrap/
 │   ├── 07-openclaw-env.sh
 │   ├── 08-memory-init.sh
 │   ├── 09-claude-octopus.sh
-│   └── 10-deployment-tools.sh
+│   ├── 10-deployment-tools.sh
+│   ├── 11-auto-updates.sh
+│   ├── 12-dev-tools.sh
+│   ├── 13-openclaw.sh
+│   ├── 14-security.sh
+│   ├── 15-productivity-tools.sh
+│   ├── 16-openclaw-skills.sh
+│   └── 17-tailscale.sh
 ├── lib/                   # Shared utilities
 │   ├── logger.sh
 │   ├── validation.sh
@@ -378,7 +404,7 @@ bash 02-python.sh validate
 
 ```bash
 # Check .env file
-cat ~/openclaw-workspace/.env
+cat ~/.openclaw/workspace/.env
 
 # Test Python SDK
 source ~/.local/venv/openclaw/bin/activate
@@ -389,10 +415,10 @@ python -c "import anthropic; print(anthropic.__version__)"
 
 ```bash
 # Check database
-sqlite3 ~/openclaw-workspace/data/memory.db ".tables"
+sqlite3 ~/.openclaw/workspace/data/memory.db ".tables"
 
 # Test memory tools
-cd ~/openclaw-workspace
+cd ~/.openclaw/workspace
 python tools/memory/memory_read.py --format markdown
 ```
 
@@ -484,6 +510,30 @@ To add new modules or improve existing ones:
 - Documentation: https://github.com/nyldn/openclaw-config/wiki
 
 ## Changelog
+
+### v2.0.0 (2026-02-08)
+
+- **BREAKING**: Upgraded Node.js requirement from 20 to 22+ (required by upstream OpenClaw)
+- **BREAKING**: Config schema changed from `config.json` to `openclaw.json` (upstream format)
+- **BREAKING**: Workspace moved from `~/openclaw-workspace` to `~/.openclaw/workspace`
+- Integrated `openclaw onboard --install-daemon` wizard into install flow
+- Skills now installed via native `openclaw skills install` (ClawHub) instead of sundial-hub
+- Added `openclaw doctor` to validation pipeline
+- Added gateway daemon systemd service (`openclaw-gateway.service`)
+- Added Tailscale integration module (17-tailscale.sh) for remote gateway access
+- Added development channel support (stable/beta/dev) to auto-update
+- Updated security guidance to match upstream model (DM pairing, sandbox modes, allowlists)
+- Default model set to `anthropic/claude-opus-4-6`
+- Upstream template files (AGENTS.md, SOUL.md, TOOLS.md) in workspace
+- UFW rules now include OpenClaw gateway port (18789)
+
+### v1.3.0 (2026-02-04)
+
+- Added OpenClaw skills module (16-openclaw-skills.sh)
+- Installs 15 popular skills from awesome-openclaw-skills (400+ downloads)
+- Skills installed via `npx sundial-hub add <name>`
+- Includes ByteRover, Self-Improving Agent, Agent Browser, and more
+- Source: https://github.com/sundial-org/awesome-openclaw-skills
 
 ### v1.2.0 (2026-02-01)
 

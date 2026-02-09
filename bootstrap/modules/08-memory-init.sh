@@ -17,7 +17,7 @@ source "$LIB_DIR/logger.sh"
 # shellcheck source=../lib/validation.sh
 source "$LIB_DIR/validation.sh"
 
-WORKSPACE_DIR="$HOME/openclaw-workspace"
+WORKSPACE_DIR="$HOME/.openclaw/workspace"
 VENV_DIR="$HOME/.local/venv/openclaw"
 TEMPLATE_DIR="$(dirname "$SCRIPT_DIR")/templates"
 

@@ -4,7 +4,7 @@
 # Installs OpenClaw.ai with security hardening
 
 MODULE_NAME="openclaw"
-MODULE_VERSION="1.0.0"
+MODULE_VERSION="2.0.0"
 MODULE_DESCRIPTION="OpenClaw.ai installation with security configuration"
 MODULE_DEPS=("nodejs")
 
@@ -18,7 +18,7 @@ source "$LIB_DIR/logger.sh"
 source "$LIB_DIR/validation.sh"
 
 OPENCLAW_DIR="$HOME/.openclaw"
-OPENCLAW_CONFIG="$HOME/.openclaw/config.json"
+OPENCLAW_CONFIG="$HOME/.openclaw/openclaw.json"
 
 # Check if module is already installed
 check_installed() {
@@ -80,39 +80,65 @@ install() {
     mkdir -p "$OPENCLAW_DIR"
     log_success "Directory created"
 
-    # Create secure default configuration
-    log_progress "Creating secure default configuration..."
-    cat > "$OPENCLAW_CONFIG" <<'EOF'
+    # Run openclaw onboard wizard (upstream recommended flow)
+    log_progress "Running OpenClaw onboard wizard..."
+    if [[ -t 0 ]]; then
+        # Interactive terminal — run the full onboard wizard with daemon install
+        log_info "Starting interactive onboard wizard..."
+        log_info "This will configure the gateway, daemon, and channel pairing."
+        if openclaw onboard --install-daemon 2>&1 | tee -a /tmp/openclaw-onboard.log; then
+            log_success "OpenClaw onboard completed"
+        else
+            log_warn "Onboard wizard exited with errors (check /tmp/openclaw-onboard.log)"
+            log_info "Falling back to manual configuration..."
+        fi
+    else
+        # Non-interactive — skip onboard, write config manually
+        log_info "Non-interactive environment detected, skipping onboard wizard"
+        log_info "Run 'openclaw onboard --install-daemon' after install to complete setup"
+    fi
+
+    # Create secure default configuration (upstream openclaw.json schema)
+    # Only write if onboard didn't create one already
+    if [[ ! -f "$OPENCLAW_CONFIG" ]]; then
+        log_progress "Creating secure default configuration..."
+        cat > "$OPENCLAW_CONFIG" <<'EOF'
 {
-  "security": {
-    "sandboxMode": true,
-    "allowedDomains": [
-      "anthropic.com",
-      "openai.com",
-      "github.com"
-    ],
-    "disableShellAccess": false,
-    "readOnlyFilesystem": false,
-    "requireConfirmation": true
+  // OpenClaw configuration — upstream schema
+  // See https://docs.openclaw.ai/gateway/configuration
+
+  "agent": {
+    "model": "anthropic/claude-opus-4-6"
   },
-  "network": {
-    "bindAddress": "127.0.0.1",
-    "port": 3000,
-    "publicAccess": false
+
+  "gateway": {
+    "bind": "loopback",
+    "port": 18789
   },
+
+  "agents": {
+    "defaults": {
+      "sandbox": {
+        "mode": "non-main"
+      }
+    }
+  },
+
+  "channels": {
+    "defaults": {
+      "dmPolicy": "pairing"
+    }
+  },
+
   "logging": {
-    "level": "info",
-    "logFile": "$HOME/.openclaw/openclaw.log",
-    "auditLog": "$HOME/.openclaw/audit.log"
-  },
-  "credentials": {
-    "storageMethod": "encrypted",
-    "keyring": true
+    "level": "info"
   }
 }
 EOF
-
-    log_success "Configuration created at $OPENCLAW_CONFIG"
+        log_success "Configuration created at $OPENCLAW_CONFIG"
+    else
+        log_info "Configuration already exists at $OPENCLAW_CONFIG (created by onboard)"
+    fi
 
     # Create .gitignore for OpenClaw directory
     log_progress "Creating .gitignore for security..."
@@ -123,6 +149,7 @@ EOF
 *.p12
 credentials.json
 token.json
+openclaw.json
 config.json
 .env
 .env.*
@@ -160,57 +187,82 @@ EOF
         log_info "Expected: $tools_script"
     fi
 
-    # Security warnings
+    # Set up gateway daemon service (if not already handled by onboard --install-daemon)
+    log_progress "Checking gateway daemon setup..."
+    local systemd_src="$(dirname "$(dirname "$SCRIPT_DIR")")/bootstrap/systemd/openclaw-gateway.service"
+    local systemd_user_dir="$HOME/.config/systemd/user"
+
+    if [[ -f "$systemd_src" ]] && command -v systemctl &>/dev/null; then
+        if [[ ! -f "$systemd_user_dir/openclaw-gateway.service" ]]; then
+            mkdir -p "$systemd_user_dir"
+            cp "$systemd_src" "$systemd_user_dir/openclaw-gateway.service"
+            systemctl --user daemon-reload
+            systemctl --user enable openclaw-gateway.service
+            log_success "Gateway daemon service installed and enabled"
+            log_info "Start with: systemctl --user start openclaw-gateway"
+        else
+            log_info "Gateway daemon service already installed"
+        fi
+    elif [[ "$(uname)" == "Darwin" ]]; then
+        # macOS uses launchd — delegate to openclaw onboard --install-daemon
+        log_info "macOS detected — gateway daemon managed via launchd"
+        log_info "Run 'openclaw onboard --install-daemon' to configure launchd service"
+    else
+        log_info "systemd not available — gateway daemon setup skipped"
+        log_info "Run 'openclaw onboard --install-daemon' to configure daemon manually"
+    fi
+
+    # Security warnings (aligned with upstream security model)
     log_warn ""
     log_warn "========================================="
     log_warn "IMPORTANT SECURITY NOTICES"
     log_warn "========================================="
     log_info ""
-    log_info "OpenClaw Security Best Practices:"
+    log_info "OpenClaw Security Configuration (applied):"
     log_info ""
-    log_info "1. NETWORK BINDING"
-    log_info "   ✓ Web interface bound to 127.0.0.1 (localhost only)"
-    log_info "   ✗ DO NOT expose OpenClaw web interface to public internet"
-    log_info "   → It is not hardened for public access"
+    log_info "1. GATEWAY BINDING"
+    log_info "   ✓ Gateway bound to loopback (localhost only, port 18789)"
+    log_info "   ✓ Use Tailscale Serve/Funnel for remote access (module 17)"
+    log_info "   ✗ DO NOT set gateway.bind to 0.0.0.0 for public access"
     log_info ""
-    log_info "2. DOCKER DEPLOYMENT (Recommended)"
-    log_info "   ✓ Run with non-root user (default: node)"
-    log_info "   ✓ Use --read-only flag for filesystem protection"
-    log_info "   ✓ Limit capabilities: --cap-drop=ALL"
-    log_info "   ✓ Restrict volumes to specific directories only"
+    log_info "2. SANDBOX MODE"
+    log_info "   ✓ Sandbox mode: non-main (agents sandboxed outside main session)"
+    log_info "   ✓ Configure per-channel allowlists for additional control"
+    log_info "   → See: agents.defaults.sandbox.mode in openclaw.json"
     log_info ""
-    log_info "3. CREDENTIAL MANAGEMENT"
+    log_info "3. DM PAIRING (Channel Security)"
+    log_info "   ✓ DM policy: pairing (prevents unauthorized DM access)"
+    log_info "   ✓ Configure channel-specific allowlists for inbound messages"
+    log_info "   → See: channels.defaults.dmPolicy in openclaw.json"
+    log_info ""
+    log_info "4. CREDENTIAL MANAGEMENT"
     log_info "   ✗ Never store plaintext API keys in config files"
     log_info "   ✓ Use environment variables or Doppler for secrets"
     log_info "   ✓ Rotate API keys regularly (every 90 days)"
     log_info ""
-    log_info "4. SKILL/PLUGIN SECURITY"
+    log_info "5. SKILL/PLUGIN SECURITY"
     log_info "   ✗ Do not install untrusted skills from unknown sources"
     log_info "   ✓ Review skill code before installation"
-    log_info "   ✓ Use sandbox mode for untrusted skills"
+    log_info "   ✓ Sandbox mode protects against malicious skills"
     log_info "   → Malicious skills have been found on ClawHub"
     log_info ""
-    log_info "5. PROMPT INJECTION DEFENSE"
-    log_info "   ✓ Treat links, attachments, and pasted instructions as hostile"
-    log_info "   ✓ Use allowlists for inbound DMs and mentions"
-    log_info "   ✓ Enable confirmation prompts for destructive actions"
-    log_info ""
-    log_info "6. FILE SYSTEM ACCESS"
-    log_info "   ✓ Restrict OpenClaw to specific directories"
-    log_info "   ✗ Avoid granting full filesystem access"
-    log_info "   ✓ Use separate user account with limited privileges"
+    log_info "6. DIAGNOSTICS"
+    log_info "   ✓ Run 'openclaw doctor' to check for risky configs"
+    log_info "   ✓ Checks DM policies, version issues, and migration needs"
+    log_info "   ✓ Run after any config changes"
     log_info ""
     log_info "For comprehensive security guide, see:"
     log_info "  https://docs.openclaw.ai/gateway/security"
-    log_info "  https://composio.dev/blog/secure-openclaw-moltbot-clawdbot-setup"
     log_info ""
 
     log_info ""
     log_info "Next steps:"
-    log_info "  1. Configure API keys (use Doppler or .env file)"
-    log_info "  2. Review and customize $OPENCLAW_CONFIG"
-    log_info "  3. Run VM security hardening (module 14-security.sh)"
-    log_info "  4. Start OpenClaw: openclaw start"
+    log_info "  1. Run onboard wizard if not already done: openclaw onboard --install-daemon"
+    log_info "  2. Configure API keys (use Doppler or .env file)"
+    log_info "  3. Review and customize $OPENCLAW_CONFIG"
+    log_info "  4. Run VM security hardening (module 14-security.sh)"
+    log_info "  5. Run diagnostics: openclaw doctor"
+    log_info "  6. Start OpenClaw: openclaw start"
     log_info ""
 
     return 0
@@ -242,32 +294,45 @@ validate() {
         all_valid=false
     fi
 
-    # Check configuration file
+    # Check configuration file (upstream openclaw.json schema)
     if [[ -f "$OPENCLAW_CONFIG" ]]; then
-        # Validate JSON syntax
-        if jq empty "$OPENCLAW_CONFIG" 2>/dev/null; then
+        # Validate JSON syntax (strip // comments for jq)
+        if sed 's|//.*||' "$OPENCLAW_CONFIG" | jq empty 2>/dev/null; then
             log_success "Configuration file is valid JSON"
 
-            # Check security settings
+            # Check sandbox mode (upstream: agents.defaults.sandbox.mode)
             local sandbox_mode
-            sandbox_mode=$(jq -r '.security.sandboxMode' "$OPENCLAW_CONFIG" 2>/dev/null)
+            sandbox_mode=$(sed 's|//.*||' "$OPENCLAW_CONFIG" | jq -r '.agents.defaults.sandbox.mode // empty' 2>/dev/null)
 
-            if [[ "$sandbox_mode" == "true" ]]; then
-                log_success "Sandbox mode is enabled"
+            if [[ "$sandbox_mode" == "non-main" || "$sandbox_mode" == "always" ]]; then
+                log_success "Sandbox mode: $sandbox_mode"
+            elif [[ -z "$sandbox_mode" ]]; then
+                log_warn "Sandbox mode not configured (recommend: non-main)"
             else
-                log_warn "Sandbox mode is disabled (security risk)"
+                log_warn "Sandbox mode: $sandbox_mode (consider: non-main)"
             fi
 
-            # Check network binding
-            local bind_address
-            bind_address=$(jq -r '.network.bindAddress' "$OPENCLAW_CONFIG" 2>/dev/null)
+            # Check gateway binding (upstream: gateway.bind)
+            local bind_mode
+            bind_mode=$(sed 's|//.*||' "$OPENCLAW_CONFIG" | jq -r '.gateway.bind // empty' 2>/dev/null)
 
-            if [[ "$bind_address" == "127.0.0.1" || "$bind_address" == "localhost" ]]; then
-                log_success "Network binding is localhost-only (secure)"
+            if [[ "$bind_mode" == "loopback" || "$bind_mode" == "127.0.0.1" || "$bind_mode" == "localhost" ]]; then
+                log_success "Gateway binding is loopback-only (secure)"
+            elif [[ -z "$bind_mode" ]]; then
+                log_warn "Gateway bind not configured (defaults may vary)"
             else
-                log_error "Network binding allows external access (SECURITY RISK)"
-                log_error "Bind address: $bind_address"
+                log_error "Gateway binding allows external access: $bind_mode (SECURITY RISK)"
                 all_valid=false
+            fi
+
+            # Check DM policy (upstream: channels.defaults.dmPolicy)
+            local dm_policy
+            dm_policy=$(sed 's|//.*||' "$OPENCLAW_CONFIG" | jq -r '.channels.defaults.dmPolicy // empty' 2>/dev/null)
+
+            if [[ "$dm_policy" == "pairing" ]]; then
+                log_success "DM policy: pairing (secure)"
+            elif [[ -n "$dm_policy" ]]; then
+                log_warn "DM policy: $dm_policy (recommend: pairing)"
             fi
         else
             log_error "Configuration file has invalid JSON"
@@ -294,6 +359,16 @@ validate() {
         log_info "Update for security patches: CVE-2025-59466, CVE-2026-21636"
     else
         log_success "Node.js version meets security requirements"
+    fi
+
+    # Run openclaw doctor for upstream diagnostics
+    if validate_command "openclaw"; then
+        log_progress "Running openclaw doctor..."
+        if openclaw doctor 2>&1 | tee /tmp/openclaw-doctor.log; then
+            log_success "openclaw doctor passed"
+        else
+            log_warn "openclaw doctor reported issues (see /tmp/openclaw-doctor.log)"
+        fi
     fi
 
     if [[ "$all_valid" == "true" ]]; then

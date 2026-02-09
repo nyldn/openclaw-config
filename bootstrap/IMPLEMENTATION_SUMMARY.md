@@ -69,7 +69,7 @@ All 20 planned files have been successfully implemented.
 
 ### ✅ Environment Setup
 - Python 3.9+ with virtual environment
-- Node.js 20+ with global package directory
+- Node.js 22+ with global package directory
 - GOTCHA framework directory structure
 - Memory system with SQLite database
 - API key configuration templates
@@ -120,7 +120,7 @@ bootstrap/
 ## Workspace Structure Created
 
 ```
-~/openclaw-workspace/
+~/.openclaw/workspace/
 ├── CLAUDE.md                 (optional workspace file)
 ├── .env                      (from template)
 ├── .gitignore                (generated)
@@ -186,7 +186,7 @@ Before deploying to production, test on a fresh Debian VM:
 
 - [ ] Run `./bootstrap.sh` from local directory
 - [ ] Verify all modules install successfully
-- [ ] Check `~/openclaw-workspace` structure
+- [ ] Check `~/.openclaw/workspace` structure
 - [ ] Validate Python environment and packages
 - [ ] Validate Node.js environment
 - [ ] Test memory system (read/write)
@@ -237,7 +237,7 @@ The Claude CLI installation method in `04-claude-cli.sh` uses placeholder code. 
 Gemini may not have a standalone CLI - the implementation focuses on the Python SDK as the primary interface, with optional CLI support.
 
 ### API Key Management
-Users must manually configure API keys in `~/openclaw-workspace/.env` after installation.
+Users must manually configure API keys in `~/.openclaw/workspace/.env` after installation.
 
 ## Success Criteria
 

@@ -70,7 +70,7 @@ cd ~/bootstrap
 ### Core System (Required)
 - ✅ System dependencies (curl, git, build-essential, sqlite3)
 - ✅ Python 3.9+ with virtual environment
-- ✅ Node.js 20+ with npm
+- ✅ Node.js 22+ with npm
 - ✅ OpenClaw workspace structure (GOTCHA framework)
 - ✅ Memory system with SQLite database
 
@@ -83,7 +83,7 @@ cd ~/bootstrap
 ## 📁 Workspace Structure Created
 
 ```
-~/openclaw-workspace/
+~/.openclaw/workspace/
 ├── CLAUDE.md              # ATLAS framework guide
 ├── .env                   # API keys (configure after install)
 ├── goals/                 # Goal definitions
@@ -106,7 +106,7 @@ cd ~/bootstrap
 ### 1. Configure API Keys
 
 ```bash
-nano ~/openclaw-workspace/.env
+nano ~/.openclaw/workspace/.env
 ```
 
 Add your keys:
@@ -139,7 +139,7 @@ claude
 ### 4. Test Memory System
 
 ```bash
-cd ~/openclaw-workspace
+cd ~/.openclaw/workspace
 
 # Activate Python environment
 source ~/.local/venv/openclaw/bin/activate
@@ -214,7 +214,7 @@ claude
 |--------|-------------|----------|
 | system-deps | Base system packages | ✅ Yes |
 | python | Python 3.9+ environment | ✅ Yes |
-| nodejs | Node.js 20+ environment | ✅ Yes |
+| nodejs | Node.js 22+ environment | ✅ Yes |
 | claude-cli | Claude Code CLI | ❌ No |
 | codex-cli | OpenAI CLI | ❌ No |
 | gemini-cli | Gemini SDK | ❌ No |
@@ -241,7 +241,7 @@ tail -f logs/bootstrap-*.log
 
 ```bash
 # Verify .env file
-cat ~/openclaw-workspace/.env
+cat ~/.openclaw/workspace/.env
 
 # Test Python SDK
 source ~/.local/venv/openclaw/bin/activate

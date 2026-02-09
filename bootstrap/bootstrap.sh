@@ -554,7 +554,7 @@ run_doctor() {
     fi
 
     # Check workspace
-    local workspace="$HOME/openclaw-workspace"
+    local workspace="$HOME/.openclaw/workspace"
     if [[ -d "$workspace" ]]; then
         log_success "Workspace exists: $workspace"
 

@@ -14,6 +14,18 @@ VENV_DIR="${VENV_DIR:-$HOME/.local/venv/openclaw}"
 NPM_GLOBAL_DIR="${NPM_GLOBAL_DIR:-$HOME/.local/npm-global}"
 UPDATE_TIMEOUT=600  # 10 minutes max
 
+# OpenClaw update channel (stable, beta, dev)
+OPENCLAW_CHANNEL="${OPENCLAW_CHANNEL:-stable}"
+OPENCLAW_CONFIG="$HOME/.openclaw/openclaw.json"
+
+# Read channel from config if set
+if [[ -f "$OPENCLAW_CONFIG" ]]; then
+    config_channel=$(sed 's|//.*||' "$OPENCLAW_CONFIG" | jq -r '.update.channel // empty' 2>/dev/null || true)
+    if [[ -n "$config_channel" ]]; then
+        OPENCLAW_CHANNEL="$config_channel"
+    fi
+fi
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -264,6 +276,34 @@ update_cli_tools() {
     return 0
 }
 
+# Update OpenClaw with channel awareness
+update_openclaw() {
+    log_info "Updating OpenClaw (channel: $OPENCLAW_CHANNEL)..."
+
+    if ! command -v openclaw &>/dev/null; then
+        log_warn "OpenClaw not installed, skipping"
+        return 0
+    fi
+
+    local current_version
+    current_version=$(openclaw --version 2>/dev/null || echo "unknown")
+    log_info "Current OpenClaw version: $current_version"
+
+    if openclaw update --channel "$OPENCLAW_CHANNEL" 2>&1 | tee -a "$LOG_FILE"; then
+        local new_version
+        new_version=$(openclaw --version 2>/dev/null || echo "unknown")
+        if [[ "$current_version" != "$new_version" ]]; then
+            log_success "OpenClaw updated: $current_version -> $new_version"
+        else
+            log_info "OpenClaw is up-to-date ($current_version)"
+        fi
+    else
+        log_warn "Failed to update OpenClaw"
+    fi
+
+    return 0
+}
+
 # Update MCP servers
 update_mcp_servers() {
     log_info "Updating MCP servers..."
@@ -413,6 +453,7 @@ generate_report() {
         echo ""
 
         echo "CLI Tools:"
+        echo "  OpenClaw: $(openclaw --version 2>/dev/null || echo 'not installed') (channel: $OPENCLAW_CHANNEL)"
         echo "  Claude Code: $(claude --version 2>/dev/null | head -n1 || echo 'not installed')"
         echo "  Vercel: $(vercel --version 2>/dev/null | head -n1 || echo 'not installed')"
         echo "  Netlify: $(netlify --version 2>/dev/null | head -n1 || echo 'not installed')"
@@ -465,6 +506,9 @@ main() {
     echo ""
 
     update_cli_tools || log_warn "CLI tools update had issues"
+    echo ""
+
+    update_openclaw || log_warn "OpenClaw update had issues"
     echo ""
 
     update_mcp_servers || log_warn "MCP servers update had issues"

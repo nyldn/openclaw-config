@@ -1,0 +1,44 @@
+[Unit]
+Description=OpenClaw Gateway Daemon
+Documentation=https://docs.openclaw.ai/gateway
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=%u
+Group=%u
+WorkingDirectory=%h
+
+# Environment
+Environment="PATH=%h/.local/bin:%h/.local/npm-global/bin:/usr/local/bin:/usr/bin:/bin"
+Environment="NODE_ENV=production"
+
+# Execute gateway
+ExecStart=%h/.local/npm-global/bin/openclaw gateway start --foreground
+ExecReload=/bin/kill -HUP $MAINPID
+
+# Restart policy
+Restart=on-failure
+RestartSec=10
+StartLimitBurst=5
+StartLimitIntervalSec=60
+
+# Timeout
+TimeoutStartSec=30
+TimeoutStopSec=15
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=openclaw-gateway
+
+# Security hardening
+PrivateTmp=yes
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=%h/.openclaw %h/.local/npm-global
+
+[Install]
+WantedBy=default.target

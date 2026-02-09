@@ -184,7 +184,7 @@ main() {
     echo ""
     log_info "Repository: $INSTALL_DIR"
     log_info "Bootstrap: $INSTALL_DIR/bootstrap"
-    log_info "Workspace: $HOME/openclaw-workspace"
+    log_info "Workspace: $HOME/.openclaw/workspace"
     echo ""
 
     if [[ -t 0 ]]; then

@@ -16,7 +16,7 @@ else
 fi
 
 CONFIG_DIR="$HOME/.openclaw"
-WORKSPACE_DIR="$HOME/openclaw-workspace"
+WORKSPACE_DIR="$HOME/.openclaw/workspace"
 ENV_FILE="$WORKSPACE_DIR/.env"
 
 show_welcome() {
@@ -415,11 +415,12 @@ run_interactive_setup() {
     echo "  3) Productivity integrations only (GitHub, Todoist, Slack)"
     echo "  4) Google services only (Calendar, Drive)"
     echo "  5) Individual service selection"
+    echo "  6) Run OpenClaw onboard wizard (recommended for first-time setup)"
     echo "  q) Quit"
     echo ""
     read -r -p "Select option [1]: " choice
     choice="${choice:-1}"
-    
+
     case "$choice" in
         1)
             configure_anthropic
@@ -468,6 +469,15 @@ run_interactive_setup() {
                 esac
             done
             ;;
+        6)
+            log_section "OpenClaw Onboard Wizard"
+            if command -v openclaw &>/dev/null; then
+                log_info "Running: openclaw onboard --install-daemon"
+                openclaw onboard --install-daemon || log_warn "Onboard wizard had issues"
+            else
+                log_error "openclaw command not found. Install it first (module 13-openclaw.sh)"
+            fi
+            ;;
         q|Q)
             log_info "Setup cancelled"
             exit 0
@@ -477,7 +487,7 @@ run_interactive_setup() {
             exit 1
             ;;
     esac
-    
+
     show_summary
 }
 

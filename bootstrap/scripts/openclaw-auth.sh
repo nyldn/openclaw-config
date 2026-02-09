@@ -16,7 +16,7 @@ else
 fi
 
 CONFIG_DIR="$HOME/.openclaw"
-WORKSPACE_DIR="$HOME/openclaw-workspace"
+WORKSPACE_DIR="$HOME/.openclaw/workspace"
 ENV_FILE="$WORKSPACE_DIR/.env"
 
 load_env() {

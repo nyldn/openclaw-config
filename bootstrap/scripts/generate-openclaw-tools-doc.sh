@@ -36,7 +36,7 @@ It is automatically generated from the bootstrap installation state.
   claude chat              # Start interactive chat
   claude --version         # Check version
   ```
-- **API Key:** Set `ANTHROPIC_API_KEY` in `~/openclaw-workspace/.env`
+- **API Key:** Set `ANTHROPIC_API_KEY` in `~/.openclaw/workspace/.env`
 - **Documentation:** https://docs.anthropic.com/claude/docs/claude-cli
 
 ### OpenAI CLI (Codex)
@@ -46,7 +46,7 @@ It is automatically generated from the bootstrap installation state.
   ```bash
   openai api chat.completions.create -m gpt-4 -g user "Hello"
   ```
-- **API Key:** Set `OPENAI_API_KEY` in `~/openclaw-workspace/.env`
+- **API Key:** Set `OPENAI_API_KEY` in `~/.openclaw/workspace/.env`
 - **Documentation:** https://platform.openai.com/docs/api-reference
 
 ### Gemini CLI
@@ -57,7 +57,7 @@ It is automatically generated from the bootstrap installation state.
   gemini chat              # Interactive chat
   gemini generate "prompt" # One-shot generation
   ```
-- **API Key:** Set `GOOGLE_API_KEY` in `~/openclaw-workspace/.env`
+- **API Key:** Set `GOOGLE_API_KEY` in `~/.openclaw/workspace/.env`
 - **Documentation:** https://ai.google.dev/docs
 
 ### OpenClaw.ai
@@ -75,7 +75,7 @@ It is automatically generated from the bootstrap installation state.
 ### Claude Octopus
 - **Command:** Multi-AI orchestration system
 - **Purpose:** Coordinate multiple AI providers for complex tasks
-- **Location:** `~/openclaw-workspace/tools/claude-octopus/`
+- **Location:** `~/.openclaw/workspace/tools/claude-octopus/`
 - **Documentation:** See workspace documentation
 
 ---
@@ -116,7 +116,7 @@ It is automatically generated from the bootstrap installation state.
   supabase db push         # Push migrations
   supabase functions deploy # Deploy Edge Functions
   ```
-- **Database URL:** Set `SUPABASE_DB_URL` in `~/openclaw-workspace/.env`
+- **Database URL:** Set `SUPABASE_DB_URL` in `~/.openclaw/workspace/.env`
 - **Documentation:** https://supabase.com/docs/guides/cli
 - **Aliases:** `deploy-supabase`
 
@@ -358,10 +358,10 @@ share-gdrive <file>      # Upload to Drive and share
 ## 📊 Memory & State Management
 
 ### Memory Database
-- **Location:** `~/openclaw-workspace/data/memory.db`
+- **Location:** `~/.openclaw/workspace/data/memory.db`
 - **Type:** SQLite database
 - **Purpose:** Persistent memory for AI agents
-- **Schema:** Defined in `~/openclaw-workspace/tools/memory/`
+- **Schema:** Defined in `~/.openclaw/workspace/tools/memory/`
 
 ### Bootstrap State
 - **Location:** `~/.openclaw/bootstrap-state.yaml`
@@ -398,7 +398,7 @@ systemctl --user start openclaw-auto-update.service
 
 ## 🌐 Environment Variables
 
-**Location:** `~/openclaw-workspace/.env`
+**Location:** `~/.openclaw/workspace/.env`
 
 Required API keys:
 ```env
@@ -465,7 +465,7 @@ journalctl --user -u openclaw-auto-update.service
 | OpenClaw Workspace | `~/.openclaw/workspace/` |
 | OpenClaw Config | `~/.openclaw/openclaw.json` |
 | Bootstrap Config | `~/openclaw-config/` |
-| Environment Variables | `~/openclaw-workspace/.env` |
+| Environment Variables | `~/.openclaw/workspace/.env` |
 | Python Virtual Env | `~/.local/venv/openclaw/` |
 | NPM Global Packages | `~/.local/npm-global/` |
 | MCP Configuration | `~/.config/claude/mcp.json` |

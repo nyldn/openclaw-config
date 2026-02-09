@@ -158,7 +158,8 @@ install() {
         ssh_port=$(grep "^Port" "$SSH_CONFIG" | awk '{print $2}' || echo "22")
         sudo ufw allow "$ssh_port"/tcp comment 'SSH'
 
-        # Allow common development ports (localhost only where possible)
+        # Allow common development ports
+        sudo ufw allow 18789/tcp comment 'OpenClaw Gateway'
         sudo ufw allow 3000/tcp comment 'Development Server'
         sudo ufw allow 5432/tcp comment 'PostgreSQL'
         sudo ufw allow 8000/tcp comment 'Alternative Dev Server'
@@ -324,18 +325,26 @@ EOF
     log_info ""
     log_info "Firewall Rules (UFW):"
     log_info "  ✓ Default: Deny incoming, allow outgoing"
-    log_info "  ✓ Allowed: SSH ($ssh_port), Dev ports (3000, 5432, 8000)"
+    log_info "  ✓ Allowed: SSH ($ssh_port), OpenClaw (18789), Dev ports (3000, 5432, 8000)"
     log_info ""
     log_info "Monitoring:"
     log_info "  ✓ Daily security reports: $SECURITY_DIR/security-report-YYYYMMDD.txt"
     log_info "  ✓ fail2ban logs: sudo journalctl -u fail2ban"
     log_info "  ✓ Manual check: $SECURITY_DIR/security-check.sh"
     log_info ""
+    log_info "OpenClaw Security (if installed):"
+    log_info "  ✓ Gateway: loopback-only binding (port 18789)"
+    log_info "  ✓ Sandbox: non-main mode for agent isolation"
+    log_info "  ✓ DM Policy: pairing mode prevents unauthorized access"
+    log_info "  ✓ Run 'openclaw doctor' for policy and config checks"
+    log_info "  ✓ Use Tailscale Serve for secure remote access (module 17)"
+    log_info ""
     log_info "Next steps:"
     log_info "  1. Review SSH config: $SSH_CONFIG"
     log_info "  2. Test SSH connection before closing current session"
     log_info "  3. Run security audit: sudo lynis audit system"
     log_info "  4. Check firewall: sudo ufw status verbose"
+    log_info "  5. Run OpenClaw diagnostics: openclaw doctor"
     log_info ""
     log_warn "IMPORTANT: Test SSH access in a NEW terminal before logging out!"
     log_info ""

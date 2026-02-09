@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 
 # Module: Node.js Environment
-# Sets up Node.js 20+ runtime and npm
+# Sets up Node.js 22+ runtime and npm
 
 MODULE_NAME="nodejs"
-MODULE_VERSION="1.0.0"
-MODULE_DESCRIPTION="Node.js 20+ runtime and npm"
+MODULE_VERSION="2.0.0"
+MODULE_DESCRIPTION="Node.js 22+ runtime and npm"
 MODULE_DEPS=("system-deps")
 
 # Source utilities
@@ -17,7 +17,7 @@ source "$LIB_DIR/logger.sh"
 # shellcheck source=../lib/validation.sh
 source "$LIB_DIR/validation.sh"
 
-MIN_NODE_VERSION="20"
+MIN_NODE_VERSION="22"
 NPM_GLOBAL_PREFIX="$HOME/.local/npm-global"
 
 # Check if module is already installed
@@ -56,8 +56,8 @@ install() {
         fi
     fi
 
-    # Add NodeSource repository for Node.js 20 LTS
-    log_progress "Adding NodeSource repository for Node.js 20 LTS"
+    # Add NodeSource repository for Node.js 22 LTS
+    log_progress "Adding NodeSource repository for Node.js 22 LTS"
 
     # Download NodeSource setup script to temporary file
     local nodejs_setup_script
@@ -67,7 +67,7 @@ install() {
     trap 'rm -f "$nodejs_setup_script"' RETURN
 
     log_progress "Downloading NodeSource setup script"
-    if ! curl -fsSL -o "$nodejs_setup_script" https://deb.nodesource.com/setup_20.x; then
+    if ! curl -fsSL -o "$nodejs_setup_script" https://deb.nodesource.com/setup_22.x; then
         log_error "Failed to download NodeSource setup script"
         rm -f "$nodejs_setup_script"
         return 1

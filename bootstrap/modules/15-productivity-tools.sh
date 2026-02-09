@@ -17,7 +17,7 @@ source "$LIB_DIR/logger.sh"
 # shellcheck source=../lib/validation.sh
 source "$LIB_DIR/validation.sh"
 
-WORKSPACE_DIR="$HOME/openclaw-workspace"
+WORKSPACE_DIR="$HOME/.openclaw/workspace"
 MCP_DIR="$WORKSPACE_DIR/mcp-servers"
 CONFIG_DIR="$HOME/.openclaw/productivity"
 

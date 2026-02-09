@@ -43,7 +43,7 @@ environment:
     global_prefix: "~/.local/npm-global"
 
   workspace:
-    base_dir: "~/openclaw-workspace"
+    base_dir: "~/.openclaw/workspace"
     subdirs:
       - goals
       - tools

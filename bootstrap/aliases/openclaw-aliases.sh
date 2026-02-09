@@ -18,8 +18,8 @@ alias oc-validate='openclaw-validate'
 
 # Configuration management
 alias openclaw-config='cd ~/.openclaw && ls -la'
-alias openclaw-env='${EDITOR:-nano} ~/openclaw-workspace/.env'
-alias openclaw-workspace='cd ~/openclaw-workspace'
+alias openclaw-env='${EDITOR:-nano} ~/.openclaw/workspace/.env'
+alias openclaw-workspace='cd ~/.openclaw/workspace'
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Bootstrap Management
@@ -51,7 +51,7 @@ alias openclaw-activate='source ~/.local/venv/openclaw/bin/activate'
 # MCP Server Management
 # ─────────────────────────────────────────────────────────────────────────────
 
-alias mcp-servers='ls -la ~/openclaw-workspace/mcp-servers/ 2>/dev/null || ls -la ~/openclaw-config/deployment-tools/mcp/implementations/'
+alias mcp-servers='ls -la ~/.openclaw/workspace/mcp-servers/ 2>/dev/null || ls -la ~/openclaw-config/deployment-tools/mcp/implementations/'
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Help
