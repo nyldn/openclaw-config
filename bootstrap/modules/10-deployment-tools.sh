@@ -16,6 +16,8 @@ LIB_DIR="$(dirname "$SCRIPT_DIR")/lib"
 source "$LIB_DIR/logger.sh"
 # shellcheck source=../lib/validation.sh
 source "$LIB_DIR/validation.sh"
+# shellcheck source=../lib/secure-download.sh
+source "$LIB_DIR/secure-download.sh"
 
 DEPLOYMENT_TOOLS_DIR="$(dirname "$SCRIPT_DIR")/deployment-tools"
 MCP_CONFIG_DIR="$HOME/.config/claude"
@@ -102,7 +104,7 @@ install() {
         local tmp_dir
         tmp_dir=$(mktemp -d)
         
-        if curl -fsSL "$url" -o "$tmp_dir/supabase.tar.gz" 2>/dev/null && \
+        if download_with_verification "$url" "$tmp_dir/supabase.tar.gz" && \
            tar -xzf "$tmp_dir/supabase.tar.gz" -C "$tmp_dir" 2>/dev/null && \
            mv "$tmp_dir/supabase" "$install_dir/supabase" 2>/dev/null; then
             chmod +x "$install_dir/supabase"

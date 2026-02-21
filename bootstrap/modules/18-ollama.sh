@@ -16,6 +16,8 @@ LIB_DIR="$(dirname "$SCRIPT_DIR")/lib"
 source "$LIB_DIR/logger.sh"
 # shellcheck source=../lib/validation.sh
 source "$LIB_DIR/validation.sh"
+# shellcheck source=../lib/secure-download.sh
+source "$LIB_DIR/secure-download.sh"
 
 DEFAULT_MODEL="llama3.2"
 
@@ -64,7 +66,8 @@ install() {
             install_script=$(mktemp)
             trap 'rm -f "$install_script"' RETURN
 
-            if curl -fsSL -o "$install_script" https://ollama.com/install.sh; then
+            if download_with_verification "https://ollama.com/install.sh" "$install_script"; then
+                log_warn "Downloaded Ollama installer hash: $(sha256sum "$install_script" 2>/dev/null || shasum -a 256 "$install_script" | awk '{print $1}')"
                 if bash "$install_script" 2>&1 | tee -a /tmp/ollama-install.log; then
                     log_success "Ollama installed"
                 else

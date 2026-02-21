@@ -25,6 +25,11 @@ CONFIG_DIR="$HOME/.openclaw"
 WORKSPACE_DIR="$HOME/.openclaw/workspace"
 ENV_FILE="$WORKSPACE_DIR/.env"
 
+# Escape special characters for sed replacement strings
+escape_sed() {
+    printf '%s\n' "$1" | sed 's/[&/\|]/\\&/g'
+}
+
 show_welcome() {
     clear
     echo ""
@@ -135,15 +140,22 @@ get_env_value() {
 set_env_value() {
     local key="$1"
     local value="$2"
-    
+
     if grep -q "^${key}=" "$ENV_FILE" 2>/dev/null; then
-        if [[ "$(uname)" == "Darwin" ]]; then
-            sed -i '' "s|^${key}=.*|${key}=${value}|" "$ENV_FILE"
-        else
-            sed -i "s|^${key}=.*|${key}=${value}|" "$ENV_FILE"
-        fi
+        # Safe line-by-line rewrite to avoid sed injection
+        local tmpfile
+        tmpfile=$(mktemp)
+        while IFS= read -r line; do
+            if [[ "$line" == "${key}="* ]]; then
+                printf '%s=%s\n' "$key" "$value"
+            else
+                printf '%s\n' "$line"
+            fi
+        done < "$ENV_FILE" > "$tmpfile"
+        mv "$tmpfile" "$ENV_FILE"
+        chmod 0600 "$ENV_FILE"
     else
-        echo "${key}=${value}" >> "$ENV_FILE"
+        printf '%s=%s\n' "$key" "$value" >> "$ENV_FILE"
     fi
 }
 
@@ -401,18 +413,26 @@ configure_personalization() {
     read -r -p "AI interaction style (e.g., concise, detailed, casual): " ai_style
 
     if [[ -n "$user_name" ]]; then
+        # Escape user inputs for safe sed replacement
+        local safe_name safe_role safe_langs safe_frameworks safe_style
+        safe_name=$(escape_sed "$user_name")
+        safe_role=$(escape_sed "${user_role:-unspecified}")
+        safe_langs=$(escape_sed "${tech_langs:-not specified}")
+        safe_frameworks=$(escape_sed "${tech_frameworks:-not specified}")
+        safe_style=$(escape_sed "${ai_style:-concise}")
+
         if [[ "$(uname)" == "Darwin" ]]; then
-            sed -i '' "s/{{ USER_NAME }}/$user_name/" "$user_md"
-            sed -i '' "s/{{ USER_ROLE }}/${user_role:-unspecified}/" "$user_md"
-            sed -i '' "s/{{ TECH_LANGUAGES }}/${tech_langs:-not specified}/" "$user_md"
-            sed -i '' "s/{{ TECH_FRAMEWORKS }}/${tech_frameworks:-not specified}/" "$user_md"
-            sed -i '' "s/{{ AI_STYLE }}/${ai_style:-concise}/" "$user_md"
+            sed -i '' "s/{{ USER_NAME }}/$safe_name/" "$user_md"
+            sed -i '' "s/{{ USER_ROLE }}/$safe_role/" "$user_md"
+            sed -i '' "s/{{ TECH_LANGUAGES }}/$safe_langs/" "$user_md"
+            sed -i '' "s/{{ TECH_FRAMEWORKS }}/$safe_frameworks/" "$user_md"
+            sed -i '' "s/{{ AI_STYLE }}/$safe_style/" "$user_md"
         else
-            sed -i "s/{{ USER_NAME }}/$user_name/" "$user_md"
-            sed -i "s/{{ USER_ROLE }}/${user_role:-unspecified}/" "$user_md"
-            sed -i "s/{{ TECH_LANGUAGES }}/${tech_langs:-not specified}/" "$user_md"
-            sed -i "s/{{ TECH_FRAMEWORKS }}/${tech_frameworks:-not specified}/" "$user_md"
-            sed -i "s/{{ AI_STYLE }}/${ai_style:-concise}/" "$user_md"
+            sed -i "s/{{ USER_NAME }}/$safe_name/" "$user_md"
+            sed -i "s/{{ USER_ROLE }}/$safe_role/" "$user_md"
+            sed -i "s/{{ TECH_LANGUAGES }}/$safe_langs/" "$user_md"
+            sed -i "s/{{ TECH_FRAMEWORKS }}/$safe_frameworks/" "$user_md"
+            sed -i "s/{{ AI_STYLE }}/$safe_style/" "$user_md"
         fi
         log_success "Workspace profile saved to $user_md"
     else

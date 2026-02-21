@@ -16,6 +16,8 @@ LIB_DIR="$(dirname "$SCRIPT_DIR")/lib"
 source "$LIB_DIR/logger.sh"
 # shellcheck source=../lib/validation.sh
 source "$LIB_DIR/validation.sh"
+# shellcheck source=../lib/secure-download.sh
+source "$LIB_DIR/secure-download.sh"
 
 # Check if module is already installed
 check_installed() {
@@ -95,7 +97,8 @@ install() {
         doppler_script=$(mktemp)
         trap 'rm -f "$doppler_script"' RETURN
 
-        if curl -Ls --tlsv1.2 --proto "=https" --retry 3 https://cli.doppler.com/install.sh -o "$doppler_script"; then
+        if download_with_verification "https://cli.doppler.com/install.sh" "$doppler_script"; then
+            log_warn "Downloaded Doppler installer hash: $(sha256sum "$doppler_script" 2>/dev/null || shasum -a 256 "$doppler_script" | awk '{print $1}')"
             if [[ "${EUID:-$(id -u)}" -eq 0 ]]; then
                 if sh "$doppler_script" 2>&1 | tee -a /tmp/doppler-install.log; then
                     log_success "Doppler CLI installed"

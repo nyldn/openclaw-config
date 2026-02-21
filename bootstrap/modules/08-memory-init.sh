@@ -60,9 +60,10 @@ install() {
             log_warn "Template not found, creating basic .env"
             cat > "$WORKSPACE_DIR/.env" <<'EOF'
 # OpenClaw Environment Configuration
-ANTHROPIC_API_KEY=sk-ant-your-key-here
-OPENAI_API_KEY=sk-proj-your-key-here
-GOOGLE_API_KEY=your-google-api-key-here
+# Add your API keys below. Run: openclaw-setup --configure
+ANTHROPIC_API_KEY=
+OPENAI_API_KEY=
+GOOGLE_API_KEY=
 DATABASE_PATH=data/memory.db
 MEMORY_DIR=memory
 LOGS_DIR=memory/logs

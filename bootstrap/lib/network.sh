@@ -17,7 +17,7 @@ DEFAULT_MANIFEST_URL="https://raw.githubusercontent.com/user/openclawd-config/ma
 # Usage: fetch_manifest [url] [output_file]
 fetch_manifest() {
     local url="${1:-$DEFAULT_MANIFEST_URL}"
-    local output="${2:-/tmp/openclaw-manifest.yaml}"
+    local output="${2:-$(mktemp /tmp/openclaw-manifest-XXXXXX.yaml)}"
 
     log_progress "Fetching remote manifest from $url"
 
@@ -140,7 +140,8 @@ compare_versions() {
 check_updates() {
     local state_file="$1"
     local manifest_url="${2:-$DEFAULT_MANIFEST_URL}"
-    local temp_manifest="/tmp/openclaw-manifest-check.yaml"
+    local temp_manifest
+    temp_manifest=$(mktemp /tmp/openclaw-manifest-check-XXXXXX.yaml)
 
     log_section "Checking for Updates"
 

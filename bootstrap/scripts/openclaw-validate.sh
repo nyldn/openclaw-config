@@ -41,6 +41,24 @@ skip() {
 
 load_env() {
     if [[ -f "$ENV_FILE" ]]; then
+        # Validate .env contains only safe KEY=VALUE pairs
+        if grep -qvE '^[[:space:]]*(#.*)?$|^[A-Za-z_][A-Za-z0-9_]*=.*$' "$ENV_FILE"; then
+            log_error "Invalid content in .env file: $ENV_FILE"
+            log_error "Only KEY=VALUE pairs and comments are allowed"
+            return 1
+        fi
+        # Reject dangerous shell constructs
+        if grep -qE '\$\(|`|;|\\|&&|\|\|' "$ENV_FILE"; then
+            log_error "Suspicious content detected in .env file (shell constructs found)"
+            return 1
+        fi
+        # Check file permissions
+        local perms
+        perms=$(stat -f "%OLp" "$ENV_FILE" 2>/dev/null || stat -c "%a" "$ENV_FILE" 2>/dev/null)
+        if [[ "$perms" != "600" ]]; then
+            log_warn ".env file permissions are $perms, should be 600. Fixing..."
+            chmod 0600 "$ENV_FILE"
+        fi
         set -a
         source "$ENV_FILE"
         set +a
@@ -329,8 +347,10 @@ validate_openclaw_doctor() {
     echo "OpenClaw Doctor:"
 
     if command -v openclaw &>/dev/null; then
-        if openclaw doctor 2>&1 | tee /tmp/openclaw-doctor.log | grep -qi "error\|fail\|critical"; then
-            fail "openclaw doctor reported issues (see /tmp/openclaw-doctor.log)"
+        local doctor_log
+        doctor_log=$(mktemp /tmp/openclaw-doctor-XXXXXX.log)
+        if openclaw doctor 2>&1 | tee "$doctor_log" | grep -qi "error\|fail\|critical"; then
+            fail "openclaw doctor reported issues (see $doctor_log)"
         else
             pass "openclaw doctor passed"
         fi
