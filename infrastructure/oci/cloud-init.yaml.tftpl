@@ -1,0 +1,45 @@
+#cloud-config
+
+hostname: openclaw-server
+manage_etc_hosts: true
+
+users:
+  - name: ${deploy_user}
+    shell: /bin/bash
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    groups: [sudo]
+    lock_passwd: true
+    ssh_authorized_keys:
+      - ${ssh_public_key}
+
+package_update: true
+package_upgrade: true
+
+packages:
+  - git
+  - curl
+  - sudo
+
+runcmd:
+  - |
+    set -euo pipefail
+    exec > >(tee -a /var/log/openclaw-bootstrap.log) 2>&1
+    echo "=== OpenClaw bootstrap started at $(date -u) ==="
+
+    DEPLOY_USER="${deploy_user}"
+    DEPLOY_HOME="/home/$DEPLOY_USER"
+
+    # Clone the repo
+    git clone https://github.com/nyldn/openclaw-config.git "$DEPLOY_HOME/openclaw-config"
+    chown -R "$DEPLOY_USER:$DEPLOY_USER" "$DEPLOY_HOME/openclaw-config"
+
+    # Build bootstrap command
+    BOOTSTRAP_CMD="$DEPLOY_HOME/openclaw-config/bootstrap/bootstrap.sh --non-interactive --skip-setup"
+%{ if bootstrap_modules != "" ~}
+    BOOTSTRAP_CMD="$BOOTSTRAP_CMD --only ${bootstrap_modules}"
+%{ endif ~}
+
+    # Run bootstrap as the deploy user
+    su - "$DEPLOY_USER" -c "$BOOTSTRAP_CMD"
+
+    echo "=== OpenClaw bootstrap completed at $(date -u) ==="
