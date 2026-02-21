@@ -1,0 +1,34 @@
+# Bootstrap Guide
+
+**Generated:** {{ TIMESTAMP }}
+**Bootstrap Version:** {{ BOOTSTRAP_VERSION }}
+
+## Quick Start
+
+1. Review your workspace: `ls ~/.openclaw/workspace/`
+2. Configure API keys: `openclaw-setup`
+3. Validate installation: `openclaw-validate`
+4. Start OpenClaw: `openclaw start`
+
+## Workspace Layout
+
+```
+~/.openclaw/workspace/
+  goals/        - Project goals and objectives
+  tools/        - Custom tools and scripts
+  context/      - Context files for agents
+  hardprompts/  - System prompts and templates
+  args/         - Argument files for commands
+  memory/       - Persistent memory and logs
+  data/         - Data storage (SQLite DB, etc.)
+```
+
+## Next Steps Checklist
+
+- [ ] Set up Anthropic API key
+- [ ] Set up OpenAI API key (optional)
+- [ ] Set up Google Gemini API key (optional)
+- [ ] Run `openclaw onboard --install-daemon`
+- [ ] Configure Tailscale for remote access (optional)
+- [ ] Review security settings: `openclaw doctor`
+- [ ] Personalize your workspace: `openclaw-setup --personalize`

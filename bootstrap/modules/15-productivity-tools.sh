@@ -299,6 +299,17 @@ EOF
 
     log_success "Credential templates created in: $CONFIG_DIR"
 
+    # Verify npm dependency availability
+    log_progress "Verifying npm dependencies are loadable"
+    local verify_packages=("@modelcontextprotocol/sdk" "googleapis" "imap" "nodemailer")
+    for pkg in "${verify_packages[@]}"; do
+        if node -e "require('$pkg')" 2>/dev/null; then
+            log_debug "Verified: $pkg is loadable"
+        else
+            log_warn "Package '$pkg' installed but not loadable by Node.js"
+        fi
+    done
+
     # Add shell aliases
     log_progress "Adding productivity shell aliases"
 
@@ -381,6 +392,28 @@ validate() {
             all_valid=false
         fi
     done
+
+    # Syntax-check MCP server files
+    for server in "${mcp_servers[@]}"; do
+        if [[ -f "$MCP_DIR/$server" ]]; then
+            if node --check "$MCP_DIR/$server" 2>/dev/null; then
+                log_success "Syntax OK: $server"
+            else
+                log_error "Syntax error in: $server"
+                all_valid=false
+            fi
+        fi
+    done
+
+    # Validate OpenClaw config JSON if present
+    local openclaw_config="$HOME/.openclaw/openclaw.json"
+    if [[ -f "$openclaw_config" ]]; then
+        if sed 's|//.*||' "$openclaw_config" | jq empty 2>/dev/null; then
+            log_success "OpenClaw config JSON is valid"
+        else
+            log_warn "OpenClaw config JSON has syntax issues"
+        fi
+    fi
 
     # Check config directory
     if [[ -d "$CONFIG_DIR" ]]; then

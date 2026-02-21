@@ -84,26 +84,50 @@ install() {
     log_info "Run 'sudo tailscale up' to authenticate (opens browser)."
     log_info ""
 
-    # Configure OpenClaw gateway for Tailscale Serve/Funnel (optional)
+    # Actively configure Tailscale Serve for OpenClaw gateway
     log_progress "Configuring OpenClaw gateway for Tailscale..."
 
+    if validate_command "tailscale"; then
+        local ts_status
+        ts_status=$(tailscale status --json 2>/dev/null | jq -r '.BackendState // empty' 2>/dev/null || echo "")
+
+        if [[ "$ts_status" == "Running" ]]; then
+            log_info "Tailscale is running — setting up Tailscale Serve for gateway"
+            if tailscale serve --bg 18789 2>&1 | tee -a /tmp/tailscale-serve.log; then
+                local ts_hostname
+                ts_hostname=$(tailscale status --json 2>/dev/null | jq -r '.Self.DNSName // empty' 2>/dev/null | sed 's/\.$//')
+                log_success "Tailscale Serve active on port 18789"
+                if [[ -n "$ts_hostname" ]]; then
+                    log_info "Access OpenClaw at: https://$ts_hostname/"
+                fi
+            else
+                log_warn "Failed to start Tailscale Serve (check /tmp/tailscale-serve.log)"
+                log_info "You can manually run: tailscale serve --bg 18789"
+            fi
+        elif [[ "$ts_status" == "NeedsLogin" ]]; then
+            log_warn "Tailscale needs login before Serve can be configured"
+            log_info "Run 'sudo tailscale up' to authenticate, then:"
+            log_info "  tailscale serve --bg 18789"
+        else
+            log_info "Tailscale status: ${ts_status:-unknown}"
+            log_info "To enable Tailscale Serve for remote gateway access:"
+            log_info "  1. Authenticate: sudo tailscale up"
+            log_info "  2. Enable Serve: tailscale serve --bg 18789"
+        fi
+    else
+        log_warn "Tailscale CLI not available — cannot configure Serve"
+    fi
+
     if [[ -f "$OPENCLAW_CONFIG" ]]; then
-        # Check if tailscale config already exists
         local has_tailscale
         has_tailscale=$(sed 's|//.*||' "$OPENCLAW_CONFIG" | jq -r '.gateway.tailscale // empty' 2>/dev/null)
 
         if [[ -z "$has_tailscale" ]]; then
-            log_info "To enable Tailscale Serve for remote gateway access, add to $OPENCLAW_CONFIG:"
-            log_info '  "gateway": { "tailscale": { "mode": "serve" } }'
             log_info ""
             log_info "Tailscale modes:"
             log_info "  serve  — Expose gateway on your tailnet only"
             log_info "  funnel — Expose gateway to the public internet via Tailscale Funnel"
-        else
-            log_info "Tailscale gateway config already present"
         fi
-    else
-        log_warn "OpenClaw config not found — install OpenClaw first (module 13)"
     fi
 
     log_info ""
