@@ -8,6 +8,11 @@ output "instance_ocid" {
   value       = oci_core_instance.openclaw.id
 }
 
+output "image_ocid" {
+  description = "OCID of the OS image used for the instance"
+  value       = local.image_ocid
+}
+
 output "ssh_command" {
   description = "SSH command to connect to the instance"
   value       = "ssh ${var.deploy_user}@${oci_core_instance.openclaw.public_ip}"

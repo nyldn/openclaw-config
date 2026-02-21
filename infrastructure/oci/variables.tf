@@ -63,9 +63,21 @@ variable "boot_volume_size_gb" {
   default     = 50
 }
 
-variable "debian_image_ocid" {
-  description = "OCID of the Debian 12 custom image (must be imported manually)"
+variable "os_image" {
+  description = "Operating system to use: 'ubuntu' (24.04 Minimal from OCI catalog) or 'debian' (12 custom import)"
   type        = string
+  default     = "ubuntu"
+
+  validation {
+    condition     = contains(["ubuntu", "debian"], var.os_image)
+    error_message = "os_image must be 'ubuntu' or 'debian'."
+  }
+}
+
+variable "debian_image_ocid" {
+  description = "OCID of the Debian 12 custom image (required only when os_image = 'debian')"
+  type        = string
+  default     = ""
 }
 
 variable "ssh_public_key_path" {

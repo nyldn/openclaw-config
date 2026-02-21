@@ -10,6 +10,23 @@ locals {
     ? var.availability_domain
     : data.oci_identity_availability_domains.ads.availability_domains[0].name
   )
+
+  image_ocid = (
+    var.os_image == "ubuntu"
+    ? data.oci_core_images.ubuntu.images[0].id
+    : var.debian_image_ocid
+  )
+}
+
+# --- Ubuntu 24.04 Minimal ARM Image Lookup ---
+
+data "oci_core_images" "ubuntu" {
+  compartment_id           = var.compartment_id
+  operating_system         = "Canonical Ubuntu"
+  operating_system_version = "24.04 Minimal aarch64"
+  shape                    = var.instance_shape
+  sort_by                  = "TIMECREATED"
+  sort_order               = "DESC"
 }
 
 # --- Networking ---
@@ -100,7 +117,7 @@ resource "oci_core_instance" "openclaw" {
 
   source_details {
     source_type             = "image"
-    source_id               = var.debian_image_ocid
+    source_id               = local.image_ocid
     boot_volume_size_in_gbs = var.boot_volume_size_gb
   }
 

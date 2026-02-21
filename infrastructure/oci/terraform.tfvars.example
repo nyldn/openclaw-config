@@ -10,11 +10,14 @@ compartment_id   = "ocid1.compartment.oc1..aaaaaaaaexample"
 # --- Region ---
 # region = "us-ashburn-1"
 
-# --- Debian 12 Image ---
-# You must import a Debian 12 cloud image into OCI as a custom image.
-# See README.md for instructions.
+# --- OS Image ---
+# "ubuntu" = Ubuntu 24.04 Minimal ARM from OCI catalog (default, no import needed)
+# "debian" = Debian 12 ARM custom image (must be imported manually, see README.md)
 
-debian_image_ocid = "ocid1.image.oc1.iad..aaaaaaaaexample"
+# os_image = "ubuntu"
+
+# Required only when os_image = "debian":
+# debian_image_ocid = "ocid1.image.oc1.iad..aaaaaaaaexample"
 
 # --- Instance Configuration ---
 # Free tier defaults: VM.Standard.A1.Flex, 4 OCPUs, 24 GB RAM
