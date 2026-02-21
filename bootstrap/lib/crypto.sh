@@ -14,7 +14,7 @@ source "${LIB_DIR}/logger.sh"
 OPENCLAW_DIR="$HOME/.openclaw"
 KEY_FILE="$OPENCLAW_DIR/config.key"
 CIPHER="aes-256-cbc"
-PBKDF2_ITERATIONS=10000
+PBKDF2_ITERATIONS=600000
 
 #
 # Initialize encryption system

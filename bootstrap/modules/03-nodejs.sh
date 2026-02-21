@@ -16,6 +16,8 @@ LIB_DIR="$(dirname "$SCRIPT_DIR")/lib"
 source "$LIB_DIR/logger.sh"
 # shellcheck source=../lib/validation.sh
 source "$LIB_DIR/validation.sh"
+# shellcheck source=../lib/secure-download.sh
+source "$LIB_DIR/secure-download.sh"
 
 MIN_NODE_VERSION="22"
 NPM_GLOBAL_PREFIX="$HOME/.local/npm-global"
@@ -67,15 +69,15 @@ install() {
     trap 'rm -f "$nodejs_setup_script"' RETURN
 
     log_progress "Downloading NodeSource setup script"
-    if ! curl -fsSL -o "$nodejs_setup_script" https://deb.nodesource.com/setup_22.x; then
+    if ! download_with_verification "https://deb.nodesource.com/setup_22.x" "$nodejs_setup_script"; then
         log_error "Failed to download NodeSource setup script"
         rm -f "$nodejs_setup_script"
         return 1
     fi
 
-    # Note: We cannot verify checksum as NodeSource updates this file regularly
-    # In a production environment, consider maintaining a known-good version
-    log_warn "Executing NodeSource setup script (checksum verification not available)"
+    # Log hash for forensic audit trail
+    log_warn "Downloaded script hash: $(sha256sum "$nodejs_setup_script" 2>/dev/null || shasum -a 256 "$nodejs_setup_script" | awk '{print $1}')"
+    log_warn "Executing NodeSource setup script (checksum pinning not available for frequently-updated scripts)"
 
     # Execute with sudo
     if ! sudo -E bash "$nodejs_setup_script"; then

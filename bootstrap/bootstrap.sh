@@ -238,12 +238,12 @@ list_modules() {
         local module_name
         module_name=$(basename "$module_file" .sh | sed 's/^[0-9]*-//')
 
-        # Source module to get description
-        # shellcheck source=/dev/null
-        source "$module_file"
-
-        local desc="${MODULE_DESCRIPTION:-No description}"
-        local version="${MODULE_VERSION:-unknown}"
+        # Extract metadata without executing the module
+        local desc version
+        desc=$(grep '^MODULE_DESCRIPTION=' "$module_file" | head -1 | cut -d'"' -f2)
+        version=$(grep '^MODULE_VERSION=' "$module_file" | head -1 | cut -d'"' -f2)
+        desc="${desc:-No description}"
+        version="${version:-unknown}"
 
         echo "  $module_name (v$version)"
         echo "    $desc"
@@ -382,6 +382,16 @@ install_module() {
 
     # Make module executable
     chmod +x "$module_file"
+
+    # Validate module file before sourcing
+    if ! head -1 "$module_file" | grep -q '^#!/'; then
+        log_error "Module file missing shebang: $module_file"
+        return 1
+    fi
+    if [[ "$(stat -f '%OLp' "$module_file" 2>/dev/null || stat -c '%a' "$module_file")" =~ [2367]$ ]]; then
+        log_error "Module file is world-writable: $module_file"
+        return 1
+    fi
 
     # Source module
     # shellcheck source=/dev/null

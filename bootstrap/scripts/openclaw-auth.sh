@@ -21,6 +21,24 @@ ENV_FILE="$WORKSPACE_DIR/.env"
 
 load_env() {
     if [[ -f "$ENV_FILE" ]]; then
+        # Validate .env contains only safe KEY=VALUE pairs
+        if grep -qvE '^[[:space:]]*(#.*)?$|^[A-Za-z_][A-Za-z0-9_]*=.*$' "$ENV_FILE"; then
+            log_error "Invalid content in .env file: $ENV_FILE"
+            log_error "Only KEY=VALUE pairs and comments are allowed"
+            return 1
+        fi
+        # Reject dangerous shell constructs
+        if grep -qE '\$\(|`|;|\\|&&|\|\|' "$ENV_FILE"; then
+            log_error "Suspicious content detected in .env file (shell constructs found)"
+            return 1
+        fi
+        # Check file permissions
+        local perms
+        perms=$(stat -f "%OLp" "$ENV_FILE" 2>/dev/null || stat -c "%a" "$ENV_FILE" 2>/dev/null)
+        if [[ "$perms" != "600" ]]; then
+            log_warn ".env file permissions are $perms, should be 600. Fixing..."
+            chmod 0600 "$ENV_FILE"
+        fi
         set -a
         source "$ENV_FILE"
         set +a
@@ -77,7 +95,10 @@ auth_gemini() {
         log_success "Google API key is configured in .env"
         
         source "$HOME/.local/venv/openclaw/bin/activate" 2>/dev/null || true
-        if python3 -c "import google.generativeai as genai; genai.configure(api_key='${GOOGLE_API_KEY}')" 2>/dev/null; then
+        if GOOGLE_API_KEY="${GOOGLE_API_KEY}" python3 -c "
+import os, google.generativeai as genai
+genai.configure(api_key=os.environ.get('GOOGLE_API_KEY', ''))
+" 2>/dev/null; then
             log_success "API key is valid"
             deactivate 2>/dev/null || true
             return 0
@@ -124,13 +145,20 @@ auth_gemini() {
         if [[ -n "$api_key" ]]; then
             if [[ -f "$ENV_FILE" ]]; then
                 if grep -q "^GOOGLE_API_KEY=" "$ENV_FILE"; then
-                    if [[ "$(uname)" == "Darwin" ]]; then
-                        sed -i '' "s|^GOOGLE_API_KEY=.*|GOOGLE_API_KEY=${api_key}|" "$ENV_FILE"
-                    else
-                        sed -i "s|^GOOGLE_API_KEY=.*|GOOGLE_API_KEY=${api_key}|" "$ENV_FILE"
-                    fi
+                    # Safe line-by-line rewrite to avoid sed injection
+                    local tmpfile
+                    tmpfile=$(mktemp)
+                    while IFS= read -r line; do
+                        if [[ "$line" == "GOOGLE_API_KEY="* ]]; then
+                            printf '%s=%s\n' "GOOGLE_API_KEY" "$api_key"
+                        else
+                            printf '%s\n' "$line"
+                        fi
+                    done < "$ENV_FILE" > "$tmpfile"
+                    mv "$tmpfile" "$ENV_FILE"
+                    chmod 0600 "$ENV_FILE"
                 else
-                    echo "GOOGLE_API_KEY=${api_key}" >> "$ENV_FILE"
+                    printf '%s=%s\n' "GOOGLE_API_KEY" "$api_key" >> "$ENV_FILE"
                 fi
             fi
             export GOOGLE_API_KEY="$api_key"

@@ -60,14 +60,16 @@ install() {
     # Add plugin to marketplace
     log_progress "Adding Claude Octopus to plugin marketplace"
 
-    if claude plugin marketplace add "$PLUGIN_URL" 2>&1 | tee /tmp/octopus-marketplace.log; then
+    local marketplace_log
+    marketplace_log=$(mktemp /tmp/octopus-marketplace-XXXXXX.log)
+    if claude plugin marketplace add "$PLUGIN_URL" 2>&1 | tee "$marketplace_log"; then
         log_success "Plugin added to marketplace"
     else
         log_error "Failed to add plugin to marketplace"
-        log_info "Check log: /tmp/octopus-marketplace.log"
+        log_info "Check log: $marketplace_log"
 
         # Check if it's already added
-        if grep -qi "already" /tmp/octopus-marketplace.log; then
+        if grep -qi "already" "$marketplace_log"; then
             log_info "Plugin already in marketplace, continuing..."
         else
             return 1
@@ -77,14 +79,16 @@ install() {
     # Install plugin
     log_progress "Installing claude-octopus plugin"
 
-    if claude plugin install "claude-octopus@$PLUGIN_NAMESPACE" 2>&1 | tee /tmp/octopus-install.log; then
+    local install_log
+    install_log=$(mktemp /tmp/octopus-install-XXXXXX.log)
+    if claude plugin install "claude-octopus@$PLUGIN_NAMESPACE" 2>&1 | tee "$install_log"; then
         log_success "Claude Octopus plugin installed"
     else
         log_error "Failed to install plugin"
-        log_info "Check log: /tmp/octopus-install.log"
+        log_info "Check log: $install_log"
 
         # Check if it's already installed
-        if grep -qi "already installed" /tmp/octopus-install.log; then
+        if grep -qi "already installed" "$install_log"; then
             log_info "Plugin already installed, continuing..."
         else
             return 1

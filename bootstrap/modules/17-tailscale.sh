@@ -16,6 +16,8 @@ LIB_DIR="$(dirname "$SCRIPT_DIR")/lib"
 source "$LIB_DIR/logger.sh"
 # shellcheck source=../lib/validation.sh
 source "$LIB_DIR/validation.sh"
+# shellcheck source=../lib/secure-download.sh
+source "$LIB_DIR/secure-download.sh"
 
 OPENCLAW_CONFIG="$HOME/.openclaw/openclaw.json"
 
@@ -64,7 +66,8 @@ install() {
             ts_setup=$(mktemp)
             trap 'rm -f "$ts_setup"' RETURN
 
-            if curl -fsSL -o "$ts_setup" https://tailscale.com/install.sh; then
+            if download_with_verification "https://tailscale.com/install.sh" "$ts_setup"; then
+                log_warn "Downloaded Tailscale installer hash: $(sha256sum "$ts_setup" 2>/dev/null || shasum -a 256 "$ts_setup" | awk '{print $1}')"
                 if sudo bash "$ts_setup" 2>&1 | tee -a /tmp/tailscale-install.log; then
                     log_success "Tailscale installed"
                 else

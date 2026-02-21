@@ -9,7 +9,7 @@ set -euo pipefail
 # Configuration
 LOG_DIR="${LOG_DIR:-/var/log/openclaw}"
 LOG_FILE="$LOG_DIR/auto-update-$(date +%Y%m%d).log"
-LOCK_FILE="/var/run/openclaw-auto-update.lock"
+LOCK_DIR="/var/run/openclaw-auto-update.lock.d"
 VENV_DIR="${VENV_DIR:-$HOME/.local/venv/openclaw}"
 NPM_GLOBAL_DIR="${NPM_GLOBAL_DIR:-$HOME/.local/npm-global}"
 UPDATE_TIMEOUT=600  # 10 minutes max
@@ -55,29 +55,27 @@ setup() {
     # Create log directory
     mkdir -p "$LOG_DIR"
 
-    # Check for lock file
-    if [[ -f "$LOCK_FILE" ]]; then
+    # Atomic directory-based locking (prevents TOCTOU race)
+    if ! mkdir "$LOCK_DIR" 2>/dev/null; then
         local lock_pid
-        lock_pid=$(cat "$LOCK_FILE")
-
-        if ps -p "$lock_pid" &>/dev/null; then
+        lock_pid=$(cat "$LOCK_DIR/pid" 2>/dev/null || echo "unknown")
+        if [[ "$lock_pid" != "unknown" ]] && ps -p "$lock_pid" &>/dev/null; then
             log_warn "Update already running (PID: $lock_pid)"
             exit 0
         else
-            log_warn "Stale lock file found, removing"
-            rm -f "$LOCK_FILE"
+            log_warn "Stale lock found, removing"
+            rm -rf "$LOCK_DIR"
+            mkdir "$LOCK_DIR" || { log_error "Cannot acquire lock"; exit 1; }
         fi
     fi
-
-    # Create lock file
-    echo $$ > "$LOCK_FILE"
+    echo $$ > "$LOCK_DIR/pid"
 
     log_info "Starting auto-update process (PID: $$)"
 }
 
 # Cleanup
 cleanup() {
-    rm -f "$LOCK_FILE"
+    rm -rf "$LOCK_DIR"
     log_info "Auto-update process completed"
 }
 
@@ -105,7 +103,16 @@ update_system_packages() {
         if [[ $upgradable -gt 0 ]]; then
             log_info "Upgrading $upgradable packages..."
 
-            if sudo DEBIAN_FRONTEND=noninteractive apt-get upgrade -y -qq 2>&1 | tee -a "$LOG_FILE"; then
+            # Prefer unattended-upgrade for security-only updates
+            if command -v unattended-upgrade &>/dev/null; then
+                if sudo unattended-upgrade -d 2>&1 | tee -a "$LOG_FILE"; then
+                    log_success "Security updates applied via unattended-upgrade"
+                else
+                    log_error "Failed to apply security updates"
+                    return 1
+                fi
+            elif sudo DEBIAN_FRONTEND=noninteractive apt-get upgrade -y -qq 2>&1 | tee -a "$LOG_FILE"; then
+                log_warn "Used full apt-get upgrade (unattended-upgrades not available)"
                 log_success "System packages upgraded"
             else
                 log_error "Failed to upgrade system packages"
@@ -377,7 +384,7 @@ update_openclaw_config() {
 
             # Pull updates
             log_info "Pulling updates..."
-            if git pull origin main 2>&1 | tee -a "$LOG_FILE"; then
+            if git pull --ff-only origin main 2>&1 | tee -a "$LOG_FILE"; then
                 log_success "openclaw-config updated"
 
                 # Re-run bootstrap if needed

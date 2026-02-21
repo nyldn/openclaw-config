@@ -16,6 +16,8 @@ LIB_DIR="$(dirname "$SCRIPT_DIR")/lib"
 source "$LIB_DIR/logger.sh"
 # shellcheck source=../lib/validation.sh
 source "$LIB_DIR/validation.sh"
+# shellcheck source=../lib/secure-download.sh
+source "$LIB_DIR/secure-download.sh"
 
 VENV_DIR="$HOME/.local/venv/openclaw"
 CONFIG_DIR="$HOME/.config/claude"
@@ -120,10 +122,17 @@ install() {
                 claude_installer=$(mktemp)
                 trap 'rm -f "$claude_installer"' RETURN
 
-                if curl -fsSL -o "$claude_installer" "$CLAUDE_INSTALL_URL" && bash "$claude_installer"; then
-                    log_success "Claude CLI installed via install script"
+                if download_with_verification "$CLAUDE_INSTALL_URL" "$claude_installer"; then
+                    log_warn "Downloaded installer hash: $(sha256sum "$claude_installer" 2>/dev/null || shasum -a 256 "$claude_installer" | awk '{print $1}')"
+                    if bash "$claude_installer"; then
+                        log_success "Claude CLI installed via install script"
+                    else
+                        log_error "Claude CLI install script failed"
+                        log_info "Please install manually from: https://claude.ai/download"
+                        return 1
+                    fi
                 else
-                    log_error "Claude CLI install script failed"
+                    log_error "Failed to download Claude CLI installer"
                     log_info "Please install manually from: https://claude.ai/download"
                     return 1
                 fi
@@ -134,10 +143,17 @@ install() {
             claude_installer=$(mktemp)
             trap 'rm -f "$claude_installer"' RETURN
 
-            if curl -fsSL -o "$claude_installer" "$CLAUDE_INSTALL_URL" && bash "$claude_installer"; then
-                log_success "Claude CLI installed via install script"
+            if download_with_verification "$CLAUDE_INSTALL_URL" "$claude_installer"; then
+                log_warn "Downloaded installer hash: $(sha256sum "$claude_installer" 2>/dev/null || shasum -a 256 "$claude_installer" | awk '{print $1}')"
+                if bash "$claude_installer"; then
+                    log_success "Claude CLI installed via install script"
+                else
+                    log_error "Claude CLI install script failed"
+                    log_info "Please install manually from: https://claude.ai/download"
+                    return 1
+                fi
             else
-                log_error "Claude CLI install script failed"
+                log_error "Failed to download Claude CLI installer"
                 log_info "Please install manually from: https://claude.ai/download"
                 return 1
             fi

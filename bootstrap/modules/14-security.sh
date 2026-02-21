@@ -158,11 +158,15 @@ install() {
         ssh_port=$(grep "^Port" "$SSH_CONFIG" | awk '{print $2}' || echo "22")
         sudo ufw allow "$ssh_port"/tcp comment 'SSH'
 
-        # Allow common development ports
+        # Allow OpenClaw gateway
         sudo ufw allow 18789/tcp comment 'OpenClaw Gateway'
-        sudo ufw allow 3000/tcp comment 'Development Server'
-        sudo ufw allow 5432/tcp comment 'PostgreSQL'
-        sudo ufw allow 8000/tcp comment 'Alternative Dev Server'
+        # Restrict dev ports to localhost only
+        sudo ufw allow from 127.0.0.1 to any port 3000 proto tcp comment 'Development Server (localhost)'
+        sudo ufw allow from ::1 to any port 3000 proto tcp comment 'Development Server (localhost IPv6)'
+        sudo ufw allow from 127.0.0.1 to any port 5432 proto tcp comment 'PostgreSQL (localhost)'
+        sudo ufw allow from ::1 to any port 5432 proto tcp comment 'PostgreSQL (localhost IPv6)'
+        sudo ufw allow from 127.0.0.1 to any port 8000 proto tcp comment 'Alt Dev Server (localhost)'
+        sudo ufw allow from ::1 to any port 8000 proto tcp comment 'Alt Dev Server (localhost IPv6)'
 
         # Enable UFW
         sudo ufw --force enable
