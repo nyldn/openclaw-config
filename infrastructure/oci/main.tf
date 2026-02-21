@@ -119,3 +119,71 @@ resource "oci_core_instance" "openclaw" {
     }))
   }
 }
+
+# --- Monitoring (conditional) ---
+
+resource "oci_ons_notification_topic" "openclaw" {
+  count          = var.enable_monitoring ? 1 : 0
+  compartment_id = var.compartment_id
+  name           = "openclaw-alerts"
+  description    = "OpenClaw monitoring alerts"
+}
+
+resource "oci_ons_subscription" "email" {
+  count          = var.enable_monitoring && var.notification_email != "" ? 1 : 0
+  compartment_id = var.compartment_id
+  topic_id       = oci_ons_notification_topic.openclaw[0].id
+  protocol       = "EMAIL"
+  endpoint       = var.notification_email
+}
+
+resource "oci_monitoring_alarm" "cpu_high" {
+  count               = var.enable_monitoring ? 1 : 0
+  compartment_id      = var.compartment_id
+  display_name        = "openclaw-cpu-high"
+  is_enabled          = true
+  metric_compartment_id = var.compartment_id
+  namespace           = "oci_computeagent"
+  query               = "CpuUtilization[5m]{resourceId = \"${oci_core_instance.openclaw.id}\"}.mean() > 90"
+  severity            = "CRITICAL"
+  body                = "CPU utilization on openclaw-server exceeded 90% for 5 minutes."
+  pending_duration    = "PT5M"
+
+  destinations = [oci_ons_notification_topic.openclaw[0].id]
+}
+
+resource "oci_monitoring_alarm" "memory_high" {
+  count               = var.enable_monitoring ? 1 : 0
+  compartment_id      = var.compartment_id
+  display_name        = "openclaw-memory-high"
+  is_enabled          = true
+  metric_compartment_id = var.compartment_id
+  namespace           = "oci_computeagent"
+  query               = "MemoryUtilization[5m]{resourceId = \"${oci_core_instance.openclaw.id}\"}.mean() > 85"
+  severity            = "WARNING"
+  body                = "Memory utilization on openclaw-server exceeded 85% for 5 minutes."
+  pending_duration    = "PT5M"
+
+  destinations = [oci_ons_notification_topic.openclaw[0].id]
+}
+
+# --- Boot Volume Backup (conditional) ---
+
+resource "oci_core_volume_backup_policy" "openclaw" {
+  count          = var.enable_boot_volume_backup ? 1 : 0
+  compartment_id = var.compartment_id
+  display_name   = "openclaw-backup-policy"
+
+  schedules {
+    backup_type       = "INCREMENTAL"
+    period            = var.backup_frequency == "DAILY" ? "ONE_DAY" : "ONE_WEEK"
+    retention_seconds = 604800 # 7 days
+    time_zone         = "UTC"
+  }
+}
+
+resource "oci_core_volume_backup_policy_assignment" "openclaw" {
+  count     = var.enable_boot_volume_backup ? 1 : 0
+  asset_id  = oci_core_instance.openclaw.boot_volume_id
+  policy_id = oci_core_volume_backup_policy.openclaw[0].id
+}

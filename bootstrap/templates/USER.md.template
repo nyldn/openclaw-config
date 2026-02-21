@@ -1,0 +1,19 @@
+# User Profile
+
+## Identity
+
+- **Name:** {{ USER_NAME }}
+- **Role:** {{ USER_ROLE }}
+
+## Technical Background
+
+- **Languages:** {{ TECH_LANGUAGES }}
+- **Frameworks:** {{ TECH_FRAMEWORKS }}
+
+## AI Interaction Style
+
+- **Preferred style:** {{ AI_STYLE }}
+
+## Notes
+
+Add any personal context that helps the AI assistant work better with you.

@@ -1,0 +1,66 @@
+name: Test Bootstrap & Lint Terraform
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'bootstrap/**'
+      - 'infrastructure/**'
+      - '.github/workflows/test-bootstrap.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'bootstrap/**'
+      - 'infrastructure/**'
+      - '.github/workflows/test-bootstrap.yml'
+
+jobs:
+  test-bootstrap:
+    runs-on: ubuntu-latest
+    container:
+      image: debian:12
+
+    steps:
+      - name: Install prerequisites
+        run: |
+          apt-get update -qq
+          apt-get install -y -qq git curl sudo shellcheck
+
+      - uses: actions/checkout@v4
+
+      - name: Create test user
+        run: |
+          useradd -m -s /bin/bash testuser
+          echo "testuser ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+
+      - name: Dry-run bootstrap
+        run: |
+          su - testuser -c "cd $GITHUB_WORKSPACE && bash bootstrap/bootstrap.sh --dry-run" || true
+
+      - name: Foundation-only install
+        run: |
+          su - testuser -c "cd $GITHUB_WORKSPACE && NON_INTERACTIVE=1 bash bootstrap/bootstrap.sh --modules system-deps" || true
+
+      - name: ShellCheck all scripts
+        run: |
+          find bootstrap/modules -name '*.sh' -exec shellcheck -S warning {} + || true
+          find bootstrap/scripts -name '*.sh' -exec shellcheck -S warning {} + || true
+          find bootstrap/lib -name '*.sh' -exec shellcheck -S warning {} + || true
+
+  lint-terraform:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Check formatting
+        run: terraform fmt -check -recursive infrastructure/oci/
+
+      - name: Validate configuration
+        run: |
+          cd infrastructure/oci
+          terraform init -backend=false
+          terraform validate

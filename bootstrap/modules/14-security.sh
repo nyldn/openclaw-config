@@ -304,6 +304,72 @@ EOF
     (crontab -l 2>/dev/null; echo "0 2 * * * $SECURITY_DIR/security-check.sh > $SECURITY_DIR/security-report-\$(date +\%Y\%m\%d).txt 2>&1") | crontab -
     log_success "Daily security check scheduled"
 
+    # Install pre-commit hook for secret scanning
+    log_progress "Installing pre-commit hook for secret scanning..."
+
+    local precommit_hook_content
+    read -r -d '' precommit_hook_content <<'HOOKEOF' || true
+#!/usr/bin/env bash
+# Pre-commit hook: scan staged files for leaked secrets
+
+PATTERNS=(
+    'sk-ant-[a-zA-Z0-9_-]{20,}'
+    'sk-proj-[a-zA-Z0-9_-]{20,}'
+    'sk-[a-zA-Z0-9_-]{40,}'
+    'ghp_[a-zA-Z0-9]{36}'
+    'ghs_[a-zA-Z0-9]{36}'
+    'xoxb-[0-9]+-[a-zA-Z0-9]+'
+    'AKIA[0-9A-Z]{16}'
+    'eyJ[a-zA-Z0-9_-]*\.eyJ[a-zA-Z0-9_-]*'
+    'AIza[0-9A-Za-z_-]{35}'
+)
+
+STAGED=$(git diff --cached --name-only --diff-filter=ACM 2>/dev/null)
+if [[ -z "$STAGED" ]]; then
+    exit 0
+fi
+
+found=0
+for pattern in "${PATTERNS[@]}"; do
+    matches=$(echo "$STAGED" | xargs grep -lPn "$pattern" 2>/dev/null || true)
+    if [[ -n "$matches" ]]; then
+        if [[ $found -eq 0 ]]; then
+            echo "ERROR: Potential secrets detected in staged files:"
+            echo ""
+        fi
+        echo "  Pattern: $pattern"
+        echo "  Files: $matches"
+        echo ""
+        found=1
+    fi
+done
+
+if [[ $found -eq 1 ]]; then
+    echo "Commit aborted. Remove secrets before committing."
+    echo "To bypass (NOT recommended): git commit --no-verify"
+    exit 1
+fi
+
+exit 0
+HOOKEOF
+
+    # Install to workspace git hooks
+    local workspace_hooks="$HOME/.openclaw/workspace/.git/hooks"
+    if [[ -d "$HOME/.openclaw/workspace/.git" ]]; then
+        mkdir -p "$workspace_hooks"
+        echo "$precommit_hook_content" > "$workspace_hooks/pre-commit"
+        chmod +x "$workspace_hooks/pre-commit"
+        log_success "Pre-commit hook installed to workspace"
+    fi
+
+    # Install as global git template
+    local git_template_hooks="$HOME/.git-templates/hooks"
+    mkdir -p "$git_template_hooks"
+    echo "$precommit_hook_content" > "$git_template_hooks/pre-commit"
+    chmod +x "$git_template_hooks/pre-commit"
+    git config --global init.templateDir "$HOME/.git-templates"
+    log_success "Pre-commit hook installed as global git template"
+
     log_info ""
     log_info "========================================="
     log_info "VM Security Hardening Complete"
@@ -463,6 +529,14 @@ validate() {
         log_success "Daily security check is scheduled"
     else
         log_warn "Daily security check not scheduled"
+    fi
+
+    # Check pre-commit hook
+    local workspace_hook="$HOME/.openclaw/workspace/.git/hooks/pre-commit"
+    if [[ -f "$workspace_hook" ]] && [[ -x "$workspace_hook" ]]; then
+        log_success "Pre-commit secret scanning hook is installed"
+    else
+        log_warn "Pre-commit secret scanning hook not found or not executable"
     fi
 
     if [[ "$all_valid" == "true" ]]; then

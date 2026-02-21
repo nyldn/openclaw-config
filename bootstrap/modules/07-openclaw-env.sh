@@ -69,6 +69,7 @@ install() {
         mkdir -p "$WORKSPACE_DIR/$dir"
         log_debug "Created: $dir"
     done
+    mkdir -p "$HOME/.openclaw/extensions"
     log_success "Directory structure created"
 
     # Create upstream workspace template files (AGENTS.md, SOUL.md, TOOLS.md)
@@ -84,6 +85,28 @@ See https://docs.openclaw.ai/agents for details.
 ## Default Agent
 
 The default agent uses the model configured in `~/.openclaw/openclaw.json`.
+It handles general-purpose tasks across the workspace.
+
+## Code Review Agent
+
+A specialized agent for reviewing pull requests and code changes.
+Configure with strict guidelines and security-focused prompts.
+
+```yaml
+name: code-review
+model: anthropic/claude-opus-4-6
+system_prompt: "You are a senior code reviewer. Focus on security, correctness, and maintainability."
+```
+
+## Research Agent
+
+An agent optimized for deep research and information gathering.
+
+```yaml
+name: research
+model: anthropic/claude-opus-4-6
+system_prompt: "You are a research assistant. Provide thorough, well-sourced analysis."
+```
 EOF
         log_debug "Created: AGENTS.md"
     fi
@@ -95,11 +118,32 @@ EOF
 Define the personality and behavioral guidelines for your agents.
 See https://docs.openclaw.ai/soul for details.
 
+## Core Identity
+
+You are a knowledgeable and reliable AI assistant embedded in the OpenClaw workspace.
+You help the user with software engineering, research, and productivity tasks.
+
 ## Guidelines
 
-- Be helpful and concise
+- Be helpful, concise, and accurate
 - Follow the principle of least privilege
 - Ask for clarification when instructions are ambiguous
+- Prefer simple solutions over complex ones
+- Always explain trade-offs when presenting options
+
+## Communication Style
+
+- Use clear, direct language
+- Format output with markdown when helpful
+- Provide code examples when relevant
+- Acknowledge uncertainty rather than guessing
+
+## Safety Boundaries
+
+- Never execute destructive operations without confirmation
+- Never expose credentials or secrets in output
+- Warn about security implications of requested actions
+- Respect file permissions and access controls
 EOF
         log_debug "Created: SOUL.md"
     fi
@@ -235,6 +279,24 @@ EOF
         fi
     else
         log_warn "Openclaw aliases file not found, skipping"
+    fi
+
+    # Copy USER.md and BOOTSTRAP.md templates to workspace
+    local TEMPLATE_DIR="$(dirname "$SCRIPT_DIR")/templates"
+
+    if [[ -f "$TEMPLATE_DIR/USER.md.template" ]] && [[ ! -f "$WORKSPACE_DIR/USER.md" ]]; then
+        cp "$TEMPLATE_DIR/USER.md.template" "$WORKSPACE_DIR/USER.md"
+        log_debug "Created: USER.md (from template)"
+    fi
+
+    if [[ -f "$TEMPLATE_DIR/BOOTSTRAP.md.template" ]]; then
+        local bootstrap_version="3.0.0"
+        local timestamp
+        timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+        sed -e "s/{{ TIMESTAMP }}/$timestamp/" \
+            -e "s/{{ BOOTSTRAP_VERSION }}/$bootstrap_version/" \
+            "$TEMPLATE_DIR/BOOTSTRAP.md.template" > "$WORKSPACE_DIR/BOOTSTRAP.md"
+        log_debug "Created: BOOTSTRAP.md (from template)"
     fi
 
     log_success "OpenClaw environment setup complete"

@@ -111,6 +111,15 @@ install() {
     "model": "anthropic/claude-opus-4-6"
   },
 
+  "models": {
+    "routing": {
+      "default": "anthropic/claude-opus-4-6",
+      "fast": "anthropic/claude-haiku-4-5-20251001",
+      "reasoning": "anthropic/claude-opus-4-6"
+    },
+    "fallback": ["anthropic/claude-sonnet-4-6", "openai/gpt-4o"]
+  },
+
   "gateway": {
     "bind": "loopback",
     "port": 18789
@@ -128,6 +137,17 @@ install() {
     "defaults": {
       "dmPolicy": "pairing"
     }
+  },
+
+  "plugins": {
+    "directory": "~/.openclaw/extensions",
+    "enabled": true,
+    "autoload": true
+  },
+
+  "dashboard": {
+    "enabled": true,
+    "theme": "system"
   },
 
   "logging": {
@@ -263,6 +283,17 @@ EOF
     log_info "  4. Run VM security hardening (module 14-security.sh)"
     log_info "  5. Run diagnostics: openclaw doctor"
     log_info "  6. Start OpenClaw: openclaw start"
+    log_info ""
+    log_info "Cost Tracking:"
+    log_info "  Monitor API usage and costs via provider billing dashboards:"
+    log_info "  - Anthropic: https://console.anthropic.com/settings/billing"
+    log_info "  - OpenAI:    https://platform.openai.com/usage"
+    log_info "  - Google:    https://console.cloud.google.com/billing"
+    log_info "  Set budget alerts in each provider to avoid unexpected charges."
+    log_info ""
+    log_info "Dashboard:"
+    log_info "  The OpenClaw dashboard is enabled by default."
+    log_info "  Access it at http://localhost:18789/dashboard after starting OpenClaw."
     log_info ""
 
     return 0

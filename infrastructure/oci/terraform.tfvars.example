@@ -30,3 +30,14 @@ debian_image_ocid = "ocid1.image.oc1.iad..aaaaaaaaexample"
 # --- OpenClaw Bootstrap ---
 # deploy_user       = "openclaw"
 # bootstrap_modules = ""  # Empty = all modules
+
+# --- Monitoring (optional) ---
+# enable_monitoring  = true
+# notification_email = "you@example.com"
+
+# --- Backup (optional) ---
+# enable_boot_volume_backup = true
+# backup_frequency          = "WEEKLY"  # DAILY or WEEKLY
+
+# --- Multi-Region (optional) ---
+# additional_regions = ["eu-frankfurt-1", "ap-tokyo-1"]

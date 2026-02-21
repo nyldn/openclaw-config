@@ -87,3 +87,44 @@ variable "bootstrap_modules" {
   type        = string
   default     = ""
 }
+
+# --- Monitoring ---
+
+variable "enable_monitoring" {
+  description = "Enable OCI monitoring (notification topic, CPU/memory alarms)"
+  type        = bool
+  default     = false
+}
+
+variable "notification_email" {
+  description = "Email address for monitoring alarm notifications"
+  type        = string
+  default     = ""
+}
+
+# --- Backup ---
+
+variable "enable_boot_volume_backup" {
+  description = "Enable automatic boot volume backups"
+  type        = bool
+  default     = false
+}
+
+variable "backup_frequency" {
+  description = "Backup frequency (DAILY or WEEKLY)"
+  type        = string
+  default     = "WEEKLY"
+
+  validation {
+    condition     = contains(["DAILY", "WEEKLY"], var.backup_frequency)
+    error_message = "backup_frequency must be DAILY or WEEKLY."
+  }
+}
+
+# --- Multi-Region ---
+
+variable "additional_regions" {
+  description = "List of additional OCI regions for multi-region deployment planning"
+  type        = list(string)
+  default     = []
+}

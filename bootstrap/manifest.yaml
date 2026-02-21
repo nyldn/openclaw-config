@@ -146,6 +146,14 @@ modules:
     description: "Tailscale VPN for secure remote gateway access"
     description_long: "Optional Tailscale integration for secure remote access to the OpenClaw gateway via Tailscale Serve or Funnel."
 
+  ollama:
+    version: "1.0.0"
+    required: false
+    category: "ai-tools"
+    size: "~2GB"
+    description: "Ollama local LLM runtime with llama3.2 model"
+    description_long: "Ollama for running local language models. Installs the lightweight llama3.2 model, optimized for ARM instances. Provides a local API at localhost:11434."
+
 packages:
   system:
     apt:

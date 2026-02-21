@@ -166,6 +166,7 @@ install() {
     log_info "  View logs:           journalctl --user -u openclaw-auto-update.service"
     log_info "  Run update now:      systemctl --user start openclaw-auto-update.service"
     log_info "  View update report:  cat $LOG_DIR/update-report-\$(date +%Y%m%d).txt"
+    log_info "  View last update:    cat ~/.openclaw/last-update.log"
     log_info ""
 
     return 0

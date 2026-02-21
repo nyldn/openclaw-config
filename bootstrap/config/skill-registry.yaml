@@ -1,0 +1,31 @@
+# Skill Registry — allowlist/blocklist for OpenClaw skill installation
+# Parsed with grep/awk (no yq dependency). Keep format simple.
+
+policy:
+  mode: blocklist
+  warn_unverified: true
+  require_interactive_confirm: true
+
+allowed:
+  - ByteRover
+  - Self-Improving Agent
+  - Agent Browser
+  - Proactive Agent
+  - Deep Research Agent
+  - Memory Setup
+  - Agent Browser 2
+  - Second Brain
+  - Prompt Guard
+  - AgentMail
+  - Compound Engineering
+  - Agent Browser 3
+  - Exa
+  - Context7 MCP
+  - Ontology
+
+blocked:
+  - CryptoMiner Agent
+  - Data Exfil Helper
+  - Backdoor Shell
+  - Token Stealer
+  - Reverse Shell Agent

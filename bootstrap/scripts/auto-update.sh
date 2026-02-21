@@ -544,6 +544,16 @@ main() {
     log_info "========================================="
     log_success "Auto-update completed in ${duration}s"
     log_info "========================================="
+
+    # Write summary to last-update.log for quick reference
+    local last_update_file="$HOME/.openclaw/last-update.log"
+    mkdir -p "$HOME/.openclaw"
+    {
+        echo "timestamp: $(date '+%Y-%m-%d %H:%M:%S')"
+        echo "duration: ${duration}s"
+        echo "log: $LOG_FILE"
+        echo "report: $LOG_DIR/update-report-$(date +%Y%m%d).txt"
+    } > "$last_update_file"
 }
 
 # Run main

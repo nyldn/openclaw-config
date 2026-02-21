@@ -5,6 +5,12 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LIB_DIR="$(dirname "$SCRIPT_DIR")/lib"
 
+# Source crypto utilities if available
+if [[ -f "$LIB_DIR/crypto.sh" ]]; then
+    # shellcheck source=../lib/crypto.sh
+    source "$LIB_DIR/crypto.sh"
+fi
+
 if [[ -f "$LIB_DIR/logger.sh" ]]; then
     source "$LIB_DIR/logger.sh"
 else
@@ -373,6 +379,47 @@ configure_google_services() {
     fi
 }
 
+configure_personalization() {
+    log_section "Personalize Your Workspace Profile"
+
+    local user_md="$WORKSPACE_DIR/USER.md"
+    if [[ ! -f "$user_md" ]]; then
+        local template="$(dirname "$SCRIPT_DIR")/templates/USER.md.template"
+        if [[ -f "$template" ]]; then
+            cp "$template" "$user_md"
+        else
+            log_error "USER.md template not found"
+            return 1
+        fi
+    fi
+
+    echo ""
+    read -r -p "Your name: " user_name
+    read -r -p "Your role (e.g., developer, researcher): " user_role
+    read -r -p "Languages you work with (e.g., Python, TypeScript): " tech_langs
+    read -r -p "Frameworks (e.g., React, FastAPI): " tech_frameworks
+    read -r -p "AI interaction style (e.g., concise, detailed, casual): " ai_style
+
+    if [[ -n "$user_name" ]]; then
+        if [[ "$(uname)" == "Darwin" ]]; then
+            sed -i '' "s/{{ USER_NAME }}/$user_name/" "$user_md"
+            sed -i '' "s/{{ USER_ROLE }}/${user_role:-unspecified}/" "$user_md"
+            sed -i '' "s/{{ TECH_LANGUAGES }}/${tech_langs:-not specified}/" "$user_md"
+            sed -i '' "s/{{ TECH_FRAMEWORKS }}/${tech_frameworks:-not specified}/" "$user_md"
+            sed -i '' "s/{{ AI_STYLE }}/${ai_style:-concise}/" "$user_md"
+        else
+            sed -i "s/{{ USER_NAME }}/$user_name/" "$user_md"
+            sed -i "s/{{ USER_ROLE }}/${user_role:-unspecified}/" "$user_md"
+            sed -i "s/{{ TECH_LANGUAGES }}/${tech_langs:-not specified}/" "$user_md"
+            sed -i "s/{{ TECH_FRAMEWORKS }}/${tech_frameworks:-not specified}/" "$user_md"
+            sed -i "s/{{ AI_STYLE }}/${ai_style:-concise}/" "$user_md"
+        fi
+        log_success "Workspace profile saved to $user_md"
+    else
+        log_info "Skipped personalization (no name provided)"
+    fi
+}
+
 show_summary() {
     log_section "Configuration Summary"
     
@@ -402,6 +449,22 @@ show_summary() {
     echo "  • Validate setup: openclaw-validate"
     echo "  • View all configs: cat $ENV_FILE"
     echo ""
+
+    # Offer credential encryption if crypto.sh is available
+    if type encrypt_workspace &>/dev/null; then
+        if [[ -z "${NON_INTERACTIVE:-}" ]] && [[ -t 0 ]]; then
+            echo ""
+            read -r -p "Encrypt sensitive credential files? [Y/n] " response
+            if [[ ! "$response" =~ ^[Nn]$ ]]; then
+                if encrypt_workspace; then
+                    log_success "Credential files encrypted"
+                    log_warn "IMPORTANT: Back up your encryption key! Without it, encrypted files cannot be recovered."
+                else
+                    log_warn "Encryption failed or was cancelled"
+                fi
+            fi
+        fi
+    fi
 }
 
 run_interactive_setup() {
@@ -416,6 +479,7 @@ run_interactive_setup() {
     echo "  4) Google services only (Calendar, Drive)"
     echo "  5) Individual service selection"
     echo "  6) Run OpenClaw onboard wizard (recommended for first-time setup)"
+    echo "  7) Personalize your workspace profile"
     echo "  q) Quit"
     echo ""
     read -r -p "Select option [1]: " choice
@@ -478,6 +542,9 @@ run_interactive_setup() {
                 log_error "openclaw command not found. Install it first (module 13-openclaw.sh)"
             fi
             ;;
+        7)
+            configure_personalization
+            ;;
         q|Q)
             log_info "Setup cancelled"
             exit 0
@@ -509,6 +576,7 @@ OPTIONS:
     --github            Configure GitHub only
     --todoist           Configure Todoist only
     --slack             Configure Slack only
+    --personalize       Personalize your workspace profile
 
 Without options, runs in interactive mode.
 
@@ -582,6 +650,10 @@ main() {
                 ;;
             --slack)
                 configure_slack
+                shift
+                ;;
+            --personalize)
+                configure_personalization
                 shift
                 ;;
             *)
