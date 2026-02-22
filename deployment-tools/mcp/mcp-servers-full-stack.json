@@ -114,6 +114,14 @@
         "SLACK_BOT_TOKEN": "${SLACK_BOT_TOKEN}",
         "SLACK_APP_TOKEN": "${SLACK_APP_TOKEN}"
       }
+    },
+    "veritas-kanban": {
+      "command": "node",
+      "args": ["$HOME/.local/share/veritas-kanban/mcp/dist/index.js"],
+      "env": {
+        "VK_API_URL": "http://localhost:3001",
+        "VK_API_KEY": "${VERITAS_ADMIN_KEY}"
+      }
     }
   }
 }
