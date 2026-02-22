@@ -25,7 +25,7 @@ check_installed() {
     export PATH="$HOME/.local/npm-global/bin:$HOME/.local/bin:$PATH"
 
     # Check if OpenAI CLI is installed
-    if ! validate_command "openai"; then
+    if ! validate_command "ai"; then
         log_debug "OpenAI CLI not found"
         return 1
     fi
@@ -76,17 +76,11 @@ validate() {
 
     local all_valid=true
 
-    # Check OpenAI CLI
-    if validate_command "openai"; then
-        if openai --version &>/dev/null 2>&1; then
-            local version
-            version=$(openai --version 2>&1 | head -n1)
-            log_success "OpenAI CLI installed: $version"
-        else
-            log_warn "OpenAI CLI found but version check failed"
-        fi
+    # Check OpenAI CLI (openai-cli npm package installs as 'ai' command)
+    if validate_command "ai"; then
+        log_success "OpenAI CLI installed (ai command)"
     else
-        log_error "OpenAI CLI not found"
+        log_error "OpenAI CLI not found (expected 'ai' command)"
         all_valid=false
     fi
 
