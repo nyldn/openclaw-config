@@ -22,6 +22,7 @@ CONFIG_DIR="$HOME/.config/openai"
 # Check if module is already installed
 check_installed() {
     log_debug "Checking if $MODULE_NAME is installed"
+    export PATH="$HOME/.local/npm-global/bin:$HOME/.local/bin:$PATH"
 
     # Check if OpenAI CLI is installed
     if ! validate_command "openai"; then
@@ -36,6 +37,9 @@ check_installed() {
 # Install the module
 install() {
     log_section "Installing OpenAI CLI"
+
+    # Ensure npm global bin is in PATH for this session
+    export PATH="$HOME/.local/npm-global/bin:$HOME/.local/bin:$PATH"
 
     # Create config directory
     log_progress "Creating OpenAI config directory: $CONFIG_DIR"
@@ -68,6 +72,7 @@ install() {
 # Validate installation
 validate() {
     log_progress "Validating OpenAI CLI installation"
+    export PATH="$HOME/.local/npm-global/bin:$HOME/.local/bin:$PATH"
 
     local all_valid=true
 

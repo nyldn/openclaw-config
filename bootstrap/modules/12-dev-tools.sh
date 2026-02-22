@@ -56,6 +56,9 @@ check_installed() {
 install() {
     log_section "Installing Development Tools"
 
+    # Ensure npm global bin is in PATH for this session
+    export PATH="$HOME/.local/npm-global/bin:$HOME/.local/bin:$PATH"
+
     # Verify npm is available
     if ! validate_command "npm"; then
         log_error "npm is required but not found"
