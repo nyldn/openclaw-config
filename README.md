@@ -1,13 +1,13 @@
-# OpenClaw VM Configuration v2.0
+# OpenClaw VM Configuration v3.0
 
 Automated configuration and deployment system for OpenClaw VMs with comprehensive tooling for AI development, cloud deployment, file sharing, and personal productivity.
 
-**What's New in v2.0:**
+**What's New in v3.0:**
+- 📋 Veritas Kanban — local-first Kanban board with AI agent orchestration and MCP server
+- 🏗️ OCI Terraform + cloud-init infrastructure for Debian 12 and Ubuntu 24.04 ARM
+- 🔒 14 critical/high security findings fixed (v2.0.1 audit)
 - 🎯 Interactive installation with preset selection
-- 🔒 Comprehensive security hardening (20+ vulnerabilities fixed)
 - 📅 Personal productivity integrations (Calendar, Email, Tasks, Slack)
-- 🔐 Credential encryption at rest
-- 🛡️ Pre-commit secret detection
 - ⚡ Smart dependency resolution
 
 ## 🚀 Quick Start
@@ -86,8 +86,9 @@ Claude Octopus requires the Claude CLI; if it isn't installed yet, rerun later w
 - **System utilities** - git, curl, jq, etc.
 - **Memory system** - SQLite-based persistence
 - **Auto-updates** - Daily automated updates for all components
+- **Veritas Kanban** - Local-first Kanban board with AI agent orchestration, `vk` CLI, and MCP server
 
-### MCP Servers (10+ Total)
+### MCP Servers (11+ Total)
 **Core Servers:**
 - Google Drive - File operations and sharing
 - Dropbox - Cloud storage access
@@ -96,11 +97,14 @@ Claude Octopus requires the Claude CLI; if it isn't installed yet, rerun later w
 - PostgreSQL - Database access (Supabase)
 - Brave Search - Web search capabilities
 
-**Productivity Servers (NEW in v2.0):**
+**Productivity Servers:**
 - Google Calendar - Event management and scheduling
 - Email - IMAP/SMTP for reading and sending emails
 - Todoist - Task and project management
 - Slack - Team messaging and collaboration
+
+**Development Servers (NEW in v3.0):**
+- Veritas Kanban - Task management, board operations, and AI agent orchestration via MCP
 
 ### Security Features (Enhanced in v2.0.1)
 - **Download Verification** - All external downloads use `secure-download.sh` with SHA256 hash audit logging
@@ -135,14 +139,14 @@ openclaw-config/
 │   ├── install.sh              # Secure installation script
 │   ├── manifest.yaml           # Module metadata (v2.0)
 │   ├── checksums.yaml          # Download verification checksums
-│   ├── modules/                # Installation modules (16 total)
+│   ├── modules/                # Installation modules (19 total)
 │   │   ├── 01-system-deps.sh
 │   │   ├── 02-python.sh
 │   │   ├── 03-nodejs.sh
 │   │   ├── 04-claude-cli.sh
 │   │   ├── ...
-│   │   ├── 14-security.sh
-│   │   └── 15-productivity-tools.sh  # NEW in v2.0
+│   │   ├── 18-ollama.sh
+│   │   └── 19-veritas-kanban.sh  # NEW in v3.0
 │   └── lib/                    # Shared utilities
 │       ├── logger.sh           # With secret sanitization
 │       ├── validation.sh       # Enhanced input validation
@@ -377,8 +381,8 @@ project-share              # Share project files
 ## 🎉 Success Metrics
 
 - **Setup Time**: ~5 minutes
-- **Components**: 10 modules
-- **MCP Servers**: 6 configured
+- **Components**: 19 modules
+- **MCP Servers**: 11+ configured
 - **Shell Aliases**: 42 available
 - **Validation**: 100% coverage
 
@@ -418,6 +422,25 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Bootstrap Docs**: [bootstrap/README.md](bootstrap/README.md)
 
 ## 📅 Changelog
+
+### v3.0.0 (2026-02-22)
+
+**📋 Veritas Kanban Integration:**
+- New bootstrap module `19-veritas-kanban.sh` — installs [Veritas Kanban](https://github.com/BradGroux/veritas-kanban) local-first Kanban board with AI agent orchestration
+- Automated setup: git clone, `pnpm build`, `vk` CLI linking, `.env` generation with random admin key, and Claude MCP config merging
+- MCP server entries added to `mcp-servers-extended.json` and `mcp-servers-full-stack.json`
+- Module includes full lifecycle: `check`, `install`, `validate`, `rollback`
+
+**🏗️ Infrastructure:**
+- OCI Terraform + cloud-init infrastructure for Debian 12 ARM deployment
+- Ubuntu 24.04 Minimal ARM support from OCI catalog
+- Aligned bootstrap with upstream `openclaw/openclaw` requirements
+
+**🔧 Improvements:**
+- 18 codebase improvements across security, UX, infrastructure, and tooling
+- Interactive install wizard and CLI setup hardening
+- Post-install onboarding system
+- Manifest updated to v3.0.0 with `veritas-kanban` entry
 
 ### v2.0.1 (2026-02-21)
 
