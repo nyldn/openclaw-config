@@ -157,6 +157,19 @@ install() {
     "theme": "system"
   },
 
+  "compaction": {
+    "memoryFlush": {
+      "enabled": true
+    }
+  },
+
+  "memorySearch": {
+    "experimental": {
+      "sessionMemory": true,
+      "sources": ["memory", "sessions"]
+    }
+  },
+
   "logging": {
     "level": "info"
   }
@@ -239,6 +252,42 @@ EOF
         log_info "Run 'openclaw onboard --install-daemon' to configure daemon manually"
     fi
 
+    # Set up daily backup of ~/.openclaw
+    log_progress "Setting up daily backup of ~/.openclaw..."
+    local backup_dir="$HOME/.openclaw-backups"
+    mkdir -p "$backup_dir"
+
+    local backup_script="$backup_dir/backup-openclaw.sh"
+    cat > "$backup_script" <<'BACKUPEOF'
+#!/bin/bash
+# Daily backup of OpenClaw configuration and memory
+BACKUP_DIR="$HOME/.openclaw-backups"
+TIMESTAMP=$(date +%Y%m%d)
+BACKUP_FILE="$BACKUP_DIR/openclaw-backup-$TIMESTAMP.tar.gz"
+
+# Only keep last 7 backups
+find "$BACKUP_DIR" -name "openclaw-backup-*.tar.gz" -mtime +7 -delete 2>/dev/null
+
+# Create backup (exclude large/transient files)
+tar -czf "$BACKUP_FILE" \
+    --exclude='*.log' \
+    --exclude='node_modules' \
+    --exclude='.tmp' \
+    --exclude='cache' \
+    -C "$HOME" .openclaw 2>/dev/null
+
+echo "Backup created: $BACKUP_FILE ($(du -h "$BACKUP_FILE" | cut -f1))"
+BACKUPEOF
+    chmod +x "$backup_script"
+
+    # Add daily cron job at 4 AM (after auto-updates at 3 AM)
+    if ! crontab -l 2>/dev/null | grep -q "backup-openclaw.sh"; then
+        (crontab -l 2>/dev/null; echo "0 4 * * * $backup_script >> $backup_dir/backup.log 2>&1") | crontab -
+        log_success "Daily backup scheduled at 4:00 AM (kept for 7 days)"
+    else
+        log_info "Backup cron job already exists"
+    fi
+
     # Security warnings (aligned with upstream security model)
     log_warn ""
     log_warn "========================================="
@@ -287,11 +336,20 @@ EOF
     log_info ""
     log_info "Next steps:"
     log_info "  1. Run onboard wizard if not already done: openclaw onboard --install-daemon"
-    log_info "  2. Configure API keys (use Doppler or .env file)"
+    log_info "     TIP: Use Opus for onboarding — it produces the best personality and setup."
+    log_info "     Be thorough: describe yourself, work habits, interests, and use cases in detail."
+    log_info "     The more context you give during onboarding, the better your agent performs."
+    log_info "  2. Configure API keys (use Doppler or .env file, NOT consumer subscriptions)"
     log_info "  3. Review and customize $OPENCLAW_CONFIG"
     log_info "  4. Run VM security hardening (module 14-security.sh)"
     log_info "  5. Run diagnostics: openclaw doctor"
     log_info "  6. Start OpenClaw: openclaw start"
+    log_info ""
+    log_info "Memory tips:"
+    log_info "  - Run /compact before starting any new task discussion"
+    log_info "  - After each workflow setup, ask your agent to commit it to memory"
+    log_info "  - Have your agent repeat back what it saved to verify accuracy"
+    log_info "  - Memory flush before compaction is enabled by default in your config"
     log_info ""
     log_info "Cost Tracking:"
     log_info "  Monitor API usage and costs via provider billing dashboards:"
