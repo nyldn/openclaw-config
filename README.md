@@ -102,14 +102,18 @@ Claude Octopus requires the Claude CLI; if it isn't installed yet, rerun later w
 - Todoist - Task and project management
 - Slack - Team messaging and collaboration
 
-### Security Features (NEW in v2.0)
-- **Download Verification** - SHA256 checksums for all external downloads
+### Security Features (Enhanced in v2.0.1)
+- **Download Verification** - All external downloads use `secure-download.sh` with SHA256 hash audit logging
 - **Secret Sanitization** - Automatic redaction of API keys, tokens, passwords in logs
-- **Credential Encryption** - AES-256-CBC encryption for sensitive config files
+- **Credential Encryption** - AES-256-CBC encryption with 600,000 PBKDF2 iterations
 - **Pre-commit Hook** - Prevents accidental commits of secrets
-- **Input Validation** - Strict validation of module names, URLs, file paths
-- **Secure Temp Files** - Uses `mktemp` instead of predictable paths
+- **Input Validation** - Strict validation of module names, URLs, file paths; sed injection prevention
+- **Secure Temp Files** - Uses `mktemp` instead of predictable paths across all modules
 - **Restrictive Permissions** - 0600/0700 for sensitive directories and files
+- **.env Validation** - Rejects command substitution, backticks, and shell constructs before sourcing
+- **Atomic Locking** - `mkdir`-based locks prevent TOCTOU race conditions
+- **Localhost-Only Ports** - Dev ports (3000, 5432, 8000) restricted to loopback in UFW
+- **Safe Auto-Updates** - Security-only upgrades via `unattended-upgrade`; `--ff-only` git pulls
 
 ### Shell Aliases (42+ Total)
 - Deployment shortcuts (deploy-vercel, deploy-netlify, etc.)
@@ -380,15 +384,21 @@ project-share              # Share project files
 
 ## 🔒 Security
 
-**Enhanced in v2.0:**
+**Enhanced in v2.0.1 (14 findings fixed — 5 CRITICAL, 9 HIGH):**
 - ✅ No `curl | bash` installation (security vulnerability eliminated)
-- ✅ SHA256 checksum verification for all downloads
+- ✅ SHA256 checksum verification for all downloads via centralized `secure-download.sh`
 - ✅ Automatic secret sanitization in logs (15+ patterns)
-- ✅ AES-256-CBC credential encryption at rest
+- ✅ AES-256-CBC credential encryption with 600,000 PBKDF2 iterations
 - ✅ Pre-commit hook prevents accidental secret commits
-- ✅ Comprehensive input validation (injection prevention)
+- ✅ Sed injection prevention — safe line-by-line file rewrites instead of interpolation
+- ✅ `.env` validation rejects command substitution, backticks, and shell constructs before sourcing
+- ✅ API keys passed via environment variables, never exposed in process lists
+- ✅ Atomic `mkdir`-based locking prevents TOCTOU race conditions
+- ✅ Dev ports (3000, 5432, 8000) restricted to localhost in UFW
+- ✅ Safe auto-updates — security-only via `unattended-upgrade`; `--ff-only` git pulls
+- ✅ Module sourcing validation — shebang and permission checks before execution
+- ✅ Secure temporary file handling with `mktemp` (no predictable paths)
 - ✅ Restrictive file permissions (0600/0700 for sensitive files)
-- ✅ Secure temporary file handling with `mktemp`
 
 **Best Practices:**
 - API tokens via environment variables
@@ -408,6 +418,26 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Bootstrap Docs**: [bootstrap/README.md](bootstrap/README.md)
 
 ## 📅 Changelog
+
+### v2.0.1 (2026-02-21)
+
+**🔒 Zero-Trust Security Audit — 14 Findings Fixed (5 CRITICAL, 9 HIGH):**
+
+*CRITICAL Fixes:*
+- **Sed injection prevention** — Replaced unsafe `sed` interpolation with line-by-line file rewrites in `openclaw-setup.sh` and `openclaw-auth.sh`
+- **API key process list exposure** — API keys now passed via environment variables, not CLI arguments (`openclaw-auth.sh`)
+- **Download verification** — All external downloads routed through `secure-download.sh` with SHA256 audit logging (5 modules: nodejs, claude-cli, dev-tools, tailscale, ollama)
+- **`.env` sourcing validation** — `.env` files validated for format and rejected if containing `$()`, backticks, `;`, `&&`, `||` before `source`
+
+*HIGH Fixes:*
+- **Hardcoded `/tmp` paths** — Replaced with `mktemp` to prevent symlink attacks (`network.sh`, `claude-octopus.sh`, `openclaw-validate.sh`)
+- **TOCTOU lock race** — File-based locking replaced with atomic `mkdir`-based locking (`auto-update.sh`)
+- **UFW port exposure** — Dev ports (3000, 5432, 8000) restricted to `127.0.0.1`/`::1` (`14-security.sh`)
+- **Supabase download** — Routed through `download_with_verification()` (`10-deployment-tools.sh`)
+- **Placeholder API keys** — Replaced fake-looking placeholders with empty values (`08-memory-init.sh`)
+- **Module sourcing** — Metadata extracted via `grep` instead of `source`; shebang and world-writable checks added (`bootstrap.sh`)
+- **PBKDF2 iterations** — Increased from 10,000 to 600,000 per OWASP 2023 guidance (`crypto.sh`)
+- **Auto-update safety** — Security-only upgrades via `unattended-upgrade`; `git pull --ff-only` prevents merge commits (`auto-update.sh`)
 
 ### v2.0.0 (2026-02-01)
 
