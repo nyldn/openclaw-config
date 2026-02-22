@@ -43,12 +43,12 @@ modules:
     description_long: "Official Anthropic Claude CLI for interacting with Claude AI models. Includes Python SDK."
 
   codex-cli:
-    version: "1.1.0"
+    version: "2.0.0"
     required: false
     category: "ai-tools"
     size: "~50MB"
-    description: "OpenAI CLI"
-    description_long: "OpenAI CLI for GPT-4 and GPT-3.5 models. Installed via npm."
+    description: "OpenAI Codex CLI"
+    description_long: "OpenAI Codex CLI (@openai/codex) — coding agent that runs locally. Inspects repos, edits files, and runs commands."
 
   gemini-cli:
     version: "1.0.0"
