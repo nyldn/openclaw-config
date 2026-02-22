@@ -24,6 +24,9 @@ OPENCLAW_CONFIG="$HOME/.openclaw/openclaw.json"
 check_installed() {
     log_debug "Checking if $MODULE_NAME is installed"
 
+    # Ensure npm global bin is in PATH for this session
+    export PATH="$HOME/.local/npm-global/bin:$HOME/.local/bin:$PATH"
+
     if ! validate_command "openclaw"; then
         log_debug "OpenClaw not found"
         return 1
@@ -63,9 +66,13 @@ install() {
         log_success "Node.js version OK: v$node_version"
     fi
 
+    # Ensure npm global bin is in PATH for this session
+    export PATH="$HOME/.local/npm-global/bin:$HOME/.local/bin:$PATH"
+
     # Install OpenClaw globally
+    # Set SHARP_IGNORE_GLOBAL_LIBVIPS to prevent sharp dependency failures on some systems
     log_progress "Installing OpenClaw via npm..."
-    if npm install -g openclaw --silent 2>&1 | tee /tmp/openclaw-install.log; then
+    if SHARP_IGNORE_GLOBAL_LIBVIPS=1 npm install -g openclaw --silent 2>&1 | tee /tmp/openclaw-install.log; then
         local openclaw_version
         openclaw_version=$(openclaw --version 2>/dev/null || echo "unknown")
         log_success "OpenClaw installed: $openclaw_version"
@@ -108,16 +115,16 @@ install() {
   // See https://docs.openclaw.ai/gateway/configuration
 
   "agent": {
-    "model": "anthropic/claude-opus-4-6"
+    "model": "anthropic/claude-sonnet-4-6"
   },
 
   "models": {
     "routing": {
-      "default": "anthropic/claude-opus-4-6",
+      "default": "anthropic/claude-sonnet-4-6",
       "fast": "anthropic/claude-haiku-4-5-20251001",
       "reasoning": "anthropic/claude-opus-4-6"
     },
-    "fallback": ["anthropic/claude-sonnet-4-6", "openai/gpt-4o"]
+    "fallback": ["anthropic/claude-opus-4-6", "openai/gpt-4o"]
   },
 
   "gateway": {
@@ -257,6 +264,8 @@ EOF
     log_info ""
     log_info "4. CREDENTIAL MANAGEMENT"
     log_info "   ✗ Never store plaintext API keys in config files"
+    log_info "   ✗ Do NOT use consumer Claude/ChatGPT subscriptions — use API keys"
+    log_info "     Consumer subscriptions ban automated/bot usage; accounts get terminated"
     log_info "   ✓ Use environment variables or Doppler for secrets"
     log_info "   ✓ Rotate API keys regularly (every 90 days)"
     log_info ""

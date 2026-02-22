@@ -165,8 +165,9 @@ install() {
         ssh_port=$(grep "^Port" "$SSH_CONFIG" | awk '{print $2}' || echo "22")
         sudo ufw allow "$ssh_port"/tcp comment 'SSH'
 
-        # Allow OpenClaw gateway
-        sudo ufw allow 18789/tcp comment 'OpenClaw Gateway'
+        # Allow OpenClaw gateway (localhost only — use Tailscale for remote access)
+        sudo ufw allow from 127.0.0.1 to any port 18789 proto tcp comment 'OpenClaw Gateway (localhost)'
+        sudo ufw allow from ::1 to any port 18789 proto tcp comment 'OpenClaw Gateway (localhost IPv6)'
         # Restrict dev ports to localhost only
         sudo ufw allow from 127.0.0.1 to any port 3000 proto tcp comment 'Development Server (localhost)'
         sudo ufw allow from ::1 to any port 3000 proto tcp comment 'Development Server (localhost IPv6)'
@@ -402,7 +403,7 @@ HOOKEOF
     log_info ""
     log_info "Firewall Rules (UFW):"
     log_info "  ✓ Default: Deny incoming, allow outgoing"
-    log_info "  ✓ Allowed: SSH ($ssh_port), OpenClaw (18789), Dev ports (3000, 5432, 8000)"
+    log_info "  ✓ Allowed: SSH ($ssh_port), OpenClaw (18789 localhost), Dev ports (3000, 5432, 8000 localhost)"
     log_info ""
     log_info "Monitoring:"
     log_info "  ✓ Daily security reports: $SECURITY_DIR/security-report-YYYYMMDD.txt"
