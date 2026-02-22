@@ -129,6 +129,14 @@ install() {
 
   "agents": {
     "defaults": {
+      "model": {
+        "primary": "anthropic/claude-sonnet-4-6",
+        "fallbacks": ["anthropic/claude-opus-4-6", "openai/gpt-4o"]
+      },
+      "models": {
+        "fast": "anthropic/claude-haiku-4-5-20251001",
+        "reasoning": "anthropic/claude-opus-4-6"
+      },
       "sandbox": {
         "mode": "non-main"
       },
@@ -376,13 +384,13 @@ validate() {
 
     # Check configuration file (upstream openclaw.json schema)
     if [[ -f "$OPENCLAW_CONFIG" ]]; then
-        # Validate JSON syntax (strip // comments for jq)
-        if sed 's|//.*||' "$OPENCLAW_CONFIG" | jq empty 2>/dev/null; then
+        # Validate JSON syntax
+        if jq empty "$OPENCLAW_CONFIG" 2>/dev/null; then
             log_success "Configuration file is valid JSON"
 
             # Check sandbox mode (upstream: agents.defaults.sandbox.mode)
             local sandbox_mode
-            sandbox_mode=$(sed 's|//.*||' "$OPENCLAW_CONFIG" | jq -r '.agents.defaults.sandbox.mode // empty' 2>/dev/null)
+            sandbox_mode=$(jq -r '.agents.defaults.sandbox.mode // empty' "$OPENCLAW_CONFIG" 2>/dev/null)
 
             if [[ "$sandbox_mode" == "non-main" || "$sandbox_mode" == "always" ]]; then
                 log_success "Sandbox mode: $sandbox_mode"
@@ -394,7 +402,7 @@ validate() {
 
             # Check gateway binding (upstream: gateway.bind)
             local bind_mode
-            bind_mode=$(sed 's|//.*||' "$OPENCLAW_CONFIG" | jq -r '.gateway.bind // empty' 2>/dev/null)
+            bind_mode=$(jq -r '.gateway.bind // empty' "$OPENCLAW_CONFIG" 2>/dev/null)
 
             if [[ "$bind_mode" == "loopback" || "$bind_mode" == "127.0.0.1" || "$bind_mode" == "localhost" ]]; then
                 log_success "Gateway binding is loopback-only (secure)"
@@ -407,7 +415,7 @@ validate() {
 
             # Check DM policy (upstream: channels.defaults.dmPolicy)
             local dm_policy
-            dm_policy=$(sed 's|//.*||' "$OPENCLAW_CONFIG" | jq -r '.channels.defaults.dmPolicy // empty' 2>/dev/null)
+            dm_policy=$(jq -r '.channels.defaults.dmPolicy // empty' "$OPENCLAW_CONFIG" 2>/dev/null)
 
             if [[ "$dm_policy" == "pairing" ]]; then
                 log_success "DM policy: pairing (secure)"
