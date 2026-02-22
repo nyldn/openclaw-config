@@ -107,12 +107,25 @@ install() {
 
     # Create secure default configuration (upstream openclaw.json schema)
     # Only write if onboard didn't create one already
+    #
+    # IMPORTANT: This template must match the runtime schema for the installed
+    # OpenClaw version. Unknown or legacy top-level keys cause the gateway to
+    # reject the config and crash-loop on startup.
+    #
+    # Validated against OpenClaw v2026.2.21-2. Key placement rules:
+    #   - compaction, memorySearch → must be under agents.defaults, NOT top-level
+    #   - models.routing, models.fallback → not recognized; model set via agents.defaults.model
+    #   - plugins.directory, plugins.autoload → not recognized
+    #   - dashboard → not recognized
+    #   - memorySearch.experimental.sources → not recognized
     if [[ ! -f "$OPENCLAW_CONFIG" ]]; then
         log_progress "Creating secure default configuration..."
         cat > "$OPENCLAW_CONFIG" <<'EOF'
 {
-  // OpenClaw configuration — upstream schema
-  // See https://docs.openclaw.ai/gateway/configuration
+  "gateway": {
+    "bind": "loopback",
+    "port": 18789
+  },
 
   "agents": {
     "defaults": {
@@ -126,13 +139,20 @@ install() {
       },
       "sandbox": {
         "mode": "non-main"
+      },
+      "compaction": {
+        "mode": "safeguard",
+        "memoryFlush": {
+          "enabled": true
+        }
+      },
+      "memorySearch": {
+        "enabled": true,
+        "experimental": {
+          "sessionMemory": true
+        }
       }
     }
-  },
-
-  "gateway": {
-    "bind": "loopback",
-    "port": 18789
   },
 
   "channels": {
@@ -142,27 +162,7 @@ install() {
   },
 
   "plugins": {
-    "directory": "~/.openclaw/extensions",
-    "enabled": true,
-    "autoload": true
-  },
-
-  "dashboard": {
-    "enabled": true,
-    "theme": "system"
-  },
-
-  "compaction": {
-    "memoryFlush": {
-      "enabled": true
-    }
-  },
-
-  "memorySearch": {
-    "experimental": {
-      "sessionMemory": true,
-      "sources": ["memory", "sessions"]
-    }
+    "enabled": true
   },
 
   "logging": {
@@ -353,11 +353,6 @@ BACKUPEOF
     log_info "  - Google:    https://console.cloud.google.com/billing"
     log_info "  Set budget alerts in each provider to avoid unexpected charges."
     log_info ""
-    log_info "Dashboard:"
-    log_info "  The OpenClaw dashboard is enabled by default."
-    log_info "  Access it at http://localhost:18789/dashboard after starting OpenClaw."
-    log_info ""
-
     return 0
 }
 
@@ -389,13 +384,13 @@ validate() {
 
     # Check configuration file (upstream openclaw.json schema)
     if [[ -f "$OPENCLAW_CONFIG" ]]; then
-        # Validate JSON syntax (strip // comments for jq)
-        if sed 's|//.*||' "$OPENCLAW_CONFIG" | jq empty 2>/dev/null; then
+        # Validate JSON syntax
+        if jq empty "$OPENCLAW_CONFIG" 2>/dev/null; then
             log_success "Configuration file is valid JSON"
 
             # Check sandbox mode (upstream: agents.defaults.sandbox.mode)
             local sandbox_mode
-            sandbox_mode=$(sed 's|//.*||' "$OPENCLAW_CONFIG" | jq -r '.agents.defaults.sandbox.mode // empty' 2>/dev/null)
+            sandbox_mode=$(jq -r '.agents.defaults.sandbox.mode // empty' "$OPENCLAW_CONFIG" 2>/dev/null)
 
             if [[ "$sandbox_mode" == "non-main" || "$sandbox_mode" == "always" ]]; then
                 log_success "Sandbox mode: $sandbox_mode"
@@ -407,7 +402,7 @@ validate() {
 
             # Check gateway binding (upstream: gateway.bind)
             local bind_mode
-            bind_mode=$(sed 's|//.*||' "$OPENCLAW_CONFIG" | jq -r '.gateway.bind // empty' 2>/dev/null)
+            bind_mode=$(jq -r '.gateway.bind // empty' "$OPENCLAW_CONFIG" 2>/dev/null)
 
             if [[ "$bind_mode" == "loopback" || "$bind_mode" == "127.0.0.1" || "$bind_mode" == "localhost" ]]; then
                 log_success "Gateway binding is loopback-only (secure)"
@@ -420,7 +415,7 @@ validate() {
 
             # Check DM policy (upstream: channels.defaults.dmPolicy)
             local dm_policy
-            dm_policy=$(sed 's|//.*||' "$OPENCLAW_CONFIG" | jq -r '.channels.defaults.dmPolicy // empty' 2>/dev/null)
+            dm_policy=$(jq -r '.channels.defaults.dmPolicy // empty' "$OPENCLAW_CONFIG" 2>/dev/null)
 
             if [[ "$dm_policy" == "pairing" ]]; then
                 log_success "DM policy: pairing (secure)"
