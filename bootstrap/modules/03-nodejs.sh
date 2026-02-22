@@ -125,6 +125,22 @@ install() {
         log_success "Added to .bashrc"
     fi
 
+    # Also add to .profile for login shells (SSH sessions)
+    # .bashrc has an early-exit guard for non-interactive shells,
+    # so PATH exports there don't apply during SSH login
+    local profile="$HOME/.profile"
+    if [[ -f "$profile" ]] && ! grep -q "$NPM_GLOBAL_PREFIX/bin" "$profile" 2>/dev/null; then
+        log_progress "Adding npm global bin to PATH in .profile"
+        {
+            echo ""
+            echo "# OpenClaw npm global prefix"
+            echo "if [ -d \"$NPM_GLOBAL_PREFIX/bin\" ] ; then"
+            echo "    PATH=\"$NPM_GLOBAL_PREFIX/bin:\$PATH\""
+            echo "fi"
+        } >> "$profile"
+        log_success "Added to .profile"
+    fi
+
     # Export for current session
     export PATH="$NPM_GLOBAL_PREFIX/bin:$PATH"
 

@@ -186,7 +186,7 @@ install_skill() {
 
     log_progress "Installing skill: $skill"
 
-    if openclaw skills install "$skill" 2>&1 | tee -a /tmp/openclaw-skill-install.log; then
+    if clawhub install "$skill" 2>&1 | tee -a /tmp/openclaw-skill-install.log; then
         log_success "Skill installed: $skill"
         verify_skill_hash "$skill"
         return 0
@@ -211,6 +211,17 @@ install() {
         log_error "openclaw CLI is required but not found"
         log_info "Please install OpenClaw first (module 13-openclaw.sh)"
         return 1
+    fi
+
+    # Install clawhub CLI if not present
+    if ! validate_command "clawhub"; then
+        log_progress "Installing clawhub CLI..."
+        if npm install -g clawhub --silent 2>&1 | tee -a /tmp/openclaw-skill-install.log; then
+            log_success "clawhub CLI installed"
+        else
+            log_error "Failed to install clawhub CLI"
+            return 1
+        fi
     fi
 
     # Create skills directory if it doesn't exist

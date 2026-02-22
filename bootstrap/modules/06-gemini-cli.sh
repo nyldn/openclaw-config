@@ -24,6 +24,9 @@ CONFIG_DIR="$HOME/.config/gemini"
 check_installed() {
     log_debug "Checking if $MODULE_NAME is installed"
 
+    # Ensure npm global bin is in PATH for this session
+    export PATH="$HOME/.local/npm-global/bin:$HOME/.local/bin:$PATH"
+
     # Check if Gemini SDK is installed in venv (CLI is optional)
     # shellcheck source=/dev/null
     source "$VENV_DIR/bin/activate" 2>/dev/null || return 1
@@ -49,12 +52,17 @@ install() {
     mkdir -p "$CONFIG_DIR"
     log_success "Config directory created"
 
-    # Gemini CLI is distributed via npx (no global install required)
-    log_info "Gemini CLI is available via: npx @google/gemini-cli"
-    log_info "Python SDK remains the primary programmatic interface"
+    # Ensure npm global bin is in PATH for this session
+    export PATH="$HOME/.local/npm-global/bin:$HOME/.local/bin:$PATH"
 
-    if ! command -v npx &>/dev/null; then
-        log_warn "npx not found; Gemini CLI won't be available"
+    # Install Gemini CLI globally
+    log_progress "Installing Gemini CLI via npm..."
+    if npm install -g @google/gemini-cli --silent 2>&1 | tee -a /tmp/gemini-install.log; then
+        local cli_version
+        cli_version=$(gemini --version 2>/dev/null | head -1 || echo "unknown")
+        log_success "Gemini CLI installed: $cli_version"
+    else
+        log_warn "Failed to install Gemini CLI globally (available via npx @google/gemini-cli)"
     fi
 
     # Install Gemini SDK
@@ -89,6 +97,9 @@ install() {
 # Validate installation
 validate() {
     log_progress "Validating Gemini installation"
+
+    # Ensure npm global bin is in PATH for this session
+    export PATH="$HOME/.local/npm-global/bin:$HOME/.local/bin:$PATH"
 
     local all_valid=true
 
