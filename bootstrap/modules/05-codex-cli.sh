@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 
 # Module: OpenAI Codex CLI
-# Installs OpenAI CLI
+# Installs OpenAI Codex CLI (@openai/codex)
 
 MODULE_NAME="codex-cli"
-MODULE_VERSION="1.1.0"
-MODULE_DESCRIPTION="OpenAI CLI"
+MODULE_VERSION="2.0.0"
+MODULE_DESCRIPTION="OpenAI Codex CLI"
 MODULE_DEPS=("system-deps" "nodejs")
 
 # Source utilities
@@ -24,19 +24,18 @@ check_installed() {
     log_debug "Checking if $MODULE_NAME is installed"
     export PATH="$HOME/.local/npm-global/bin:$HOME/.local/bin:$PATH"
 
-    # Check if OpenAI CLI is installed
-    if ! validate_command "ai"; then
-        log_debug "OpenAI CLI not found"
-        return 1
+    if validate_command "codex"; then
+        log_debug "Codex CLI is installed"
+        return 0
     fi
 
-    log_debug "OpenAI CLI is installed"
-    return 0
+    log_debug "Codex CLI not found"
+    return 1
 }
 
 # Install the module
 install() {
-    log_section "Installing OpenAI CLI"
+    log_section "Installing OpenAI Codex CLI"
 
     # Ensure npm global bin is in PATH for this session
     export PATH="$HOME/.local/npm-global/bin:$HOME/.local/bin:$PATH"
@@ -46,41 +45,44 @@ install() {
     mkdir -p "$CONFIG_DIR"
     log_success "Config directory created"
 
-    # Install OpenAI CLI via npm
-    log_progress "Installing OpenAI CLI via npm"
+    # Remove stale openai-cli package if present
+    if npm ls -g openai-cli &>/dev/null; then
+        log_progress "Removing stale openai-cli package..."
+        npm uninstall -g openai-cli --silent 2>/dev/null || true
+    fi
 
-    if ! npm install -g openai-cli; then
-        log_warn "Failed to install openai-cli, trying alternative package"
-
-        # Try alternative package name
-        if ! npm install -g openai; then
-            log_error "Failed to install OpenAI CLI"
-            return 1
-        else
-            log_success "OpenAI npm package installed"
-        fi
+    # Install Codex CLI via npm
+    log_progress "Installing @openai/codex via npm..."
+    if npm install -g @openai/codex; then
+        local version
+        version=$(codex --version 2>/dev/null || echo "unknown")
+        log_success "Codex CLI installed: $version"
     else
-        log_success "OpenAI CLI installed"
+        log_error "Failed to install @openai/codex"
+        return 1
     fi
 
     log_info "OpenAI API key configuration required"
-    log_info "Set OPENAI_API_KEY environment variable or run 'openai auth login'"
+    log_info "Set OPENAI_API_KEY environment variable"
+    log_info "Run 'codex' to start an interactive session"
 
     return 0
 }
 
 # Validate installation
 validate() {
-    log_progress "Validating OpenAI CLI installation"
+    log_progress "Validating Codex CLI installation"
     export PATH="$HOME/.local/npm-global/bin:$HOME/.local/bin:$PATH"
 
     local all_valid=true
 
-    # Check OpenAI CLI (openai-cli npm package installs as 'ai' command)
-    if validate_command "ai"; then
-        log_success "OpenAI CLI installed (ai command)"
+    # Check Codex CLI
+    if validate_command "codex"; then
+        local version
+        version=$(codex --version 2>/dev/null || echo "unknown")
+        log_success "Codex CLI installed: $version"
     else
-        log_error "OpenAI CLI not found (expected 'ai' command)"
+        log_error "Codex CLI not found (expected 'codex' command)"
         all_valid=false
     fi
 
@@ -92,22 +94,21 @@ validate() {
     fi
 
     if [[ "$all_valid" == "true" ]]; then
-        log_success "OpenAI CLI validation passed"
+        log_success "Codex CLI validation passed"
         return 0
     else
-        log_error "OpenAI CLI validation failed"
+        log_error "Codex CLI validation failed"
         return 1
     fi
 }
 
 # Rollback installation
 rollback() {
-    log_warn "Rolling back OpenAI CLI installation"
+    log_warn "Rolling back Codex CLI installation"
 
-    # Uninstall OpenAI CLI
     if command -v npm &>/dev/null; then
+        npm uninstall -g @openai/codex 2>/dev/null || true
         npm uninstall -g openai-cli 2>/dev/null || true
-        npm uninstall -g openai 2>/dev/null || true
     fi
 
     # Remove config directory
