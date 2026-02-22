@@ -160,6 +160,47 @@ EOF
         log_debug "Created: TOOLS.md (placeholder)"
     fi
 
+    if [[ ! -f "$WORKSPACE_DIR/HEARTBEAT.md" ]]; then
+        cat > "$WORKSPACE_DIR/HEARTBEAT.md" <<'EOF'
+# Heartbeat - Periodic Tasks
+
+## Daily (Every Heartbeat)
+
+- Review recent memories for important context
+- Check for pending action items or tasks
+
+## Weekly (Mondays)
+
+- Review MEMORY.md for outdated info to archive
+- Store key decisions from past week
+- Verify backup logs are clean
+
+## Monthly
+
+- Full memory audit: what's working, what's missing
+- Update TOOLS.md with any new API keys or services
+
+## When Starting Work
+
+- Load relevant memories into working context
+- Check for any action items or pending tasks
+
+## When Ending Work
+
+- Store key decisions made
+- Update project status
+- Note any blockers or next steps
+
+## Context Management Rules
+
+- Store important decisions immediately
+- Run `/compact` before starting any new task discussion
+- After setting up a new workflow, commit it to memory and verify
+- Use MEMORY.md for quick reference
+EOF
+        log_debug "Created: HEARTBEAT.md"
+    fi
+
     log_success "Upstream template files created"
 
     # Create memory tools directory (placeholder for user tools)
