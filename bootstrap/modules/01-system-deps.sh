@@ -53,8 +53,18 @@ install() {
         return 1
     fi
 
-    # Install packages
-    # Note: python3.11-venv is required for Debian 12, python3-venv alone is insufficient
+    # Preconfigure debconf to suppress interactive prompts from dependencies
+    # Postfix (pulled in by some packages) asks for a mail config type — default to "No configuration"
+    if command -v debconf-set-selections &>/dev/null; then
+        echo "postfix postfix/main_mailer_type select No configuration" | sudo debconf-set-selections
+        log_debug "Preconfigured Postfix debconf to skip interactive prompt"
+    fi
+
+    # Detect system Python version for matching -venv package
+    # Debian 12 has python3.11, Ubuntu 24.04 has python3.12, etc.
+    local python_minor
+    python_minor=$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")' 2>/dev/null || echo "")
+
     local packages=(
         curl
         git
@@ -63,7 +73,6 @@ install() {
         python3-dev
         python3-pip
         python3-venv
-        python3.11-venv
         libssl-dev
         ca-certificates
         gnupg
@@ -71,6 +80,17 @@ install() {
         wget
         software-properties-common
     )
+
+    # Add version-specific venv package if available (e.g. python3.11-venv, python3.12-venv)
+    if [[ -n "$python_minor" ]]; then
+        local versioned_venv="python${python_minor}-venv"
+        if apt-cache show "$versioned_venv" &>/dev/null; then
+            packages+=("$versioned_venv")
+            log_debug "Adding version-specific venv package: $versioned_venv"
+        else
+            log_debug "Version-specific venv package $versioned_venv not found, using python3-venv"
+        fi
+    fi
 
     if ! install_packages "${packages[@]}"; then
         return 1
