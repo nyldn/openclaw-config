@@ -154,6 +154,14 @@ modules:
     description: "Ollama local LLM runtime with llama3.2 model"
     description_long: "Ollama for running local language models. Installs the lightweight llama3.2 model, optimized for ARM instances. Provides a local API at localhost:11434."
 
+  veritas-kanban:
+    version: "1.0.0"
+    required: false
+    category: "development"
+    size: "~200MB"
+    description: "Veritas Kanban board with AI agent orchestration and MCP server"
+    description_long: "Local-first Kanban board for task management and AI agent orchestration. Includes drag-and-drop board, REST/WebSocket API, vk CLI, MCP server, workflow engine, and GitHub Issues sync. Tasks stored as Markdown files."
+
 packages:
   system:
     apt:
