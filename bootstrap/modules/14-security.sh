@@ -78,6 +78,13 @@ install() {
     # Install security packages
     log_progress "Installing security packages..."
 
+    # Preconfigure debconf to suppress interactive prompts from dependencies
+    # AIDE pulls in Postfix which has a high-priority mail config prompt
+    if command -v debconf-set-selections &>/dev/null; then
+        echo "postfix postfix/main_mailer_type select No configuration" | sudo debconf-set-selections
+        log_debug "Preconfigured Postfix debconf to skip interactive prompt"
+    fi
+
     local packages=(
         "fail2ban"      # Intrusion prevention
         "ufw"           # Uncomplicated Firewall
@@ -89,7 +96,7 @@ install() {
 
     for package in "${packages[@]}"; do
         log_info "Installing $package..."
-        if sudo apt-get install -y "$package" -qq 2>&1 | tee -a /tmp/security-install.log; then
+        if sudo DEBIAN_FRONTEND=noninteractive apt-get install -y "$package" -qq 2>&1 | tee -a /tmp/security-install.log; then
             log_success "$package installed"
         else
             log_warn "Failed to install $package"

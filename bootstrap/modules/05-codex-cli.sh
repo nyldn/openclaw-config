@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 
 # Module: OpenAI Codex CLI
-# Installs OpenAI CLI and Python SDK
+# Installs OpenAI CLI
 
 MODULE_NAME="codex-cli"
-MODULE_VERSION="1.0.0"
-MODULE_DESCRIPTION="OpenAI CLI and Python SDK"
-MODULE_DEPS=("system-deps" "python" "nodejs")
+MODULE_VERSION="1.1.0"
+MODULE_DESCRIPTION="OpenAI CLI"
+MODULE_DEPS=("system-deps" "nodejs")
 
 # Source utilities
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -17,7 +17,6 @@ source "$LIB_DIR/logger.sh"
 # shellcheck source=../lib/validation.sh
 source "$LIB_DIR/validation.sh"
 
-VENV_DIR="$HOME/.local/venv/openclaw"
 CONFIG_DIR="$HOME/.config/openai"
 
 # Check if module is already installed
@@ -30,25 +29,13 @@ check_installed() {
         return 1
     fi
 
-    # Check if OpenAI SDK is installed in venv
-    # shellcheck source=/dev/null
-    source "$VENV_DIR/bin/activate" 2>/dev/null || return 1
-
-    if ! python3 -c "import openai" 2>/dev/null; then
-        log_debug "OpenAI SDK not found"
-        deactivate 2>/dev/null || true
-        return 1
-    fi
-
-    deactivate 2>/dev/null || true
-
-    log_debug "OpenAI CLI and SDK are installed"
+    log_debug "OpenAI CLI is installed"
     return 0
 }
 
 # Install the module
 install() {
-    log_section "Installing OpenAI CLI and SDK"
+    log_section "Installing OpenAI CLI"
 
     # Create config directory
     log_progress "Creating OpenAI config directory: $CONFIG_DIR"
@@ -64,36 +51,13 @@ install() {
         # Try alternative package name
         if ! npm install -g openai; then
             log_error "Failed to install OpenAI CLI"
-            log_info "You may need to install manually or use the API key directly"
-            # Don't return error - CLI is optional, SDK is main requirement
+            return 1
         else
             log_success "OpenAI npm package installed"
         fi
     else
         log_success "OpenAI CLI installed"
     fi
-
-    # Verify OpenAI SDK is installed (should be from Python module)
-    # shellcheck source=/dev/null
-    source "$VENV_DIR/bin/activate"
-
-    log_progress "Verifying OpenAI Python SDK"
-
-    if python3 -c "import openai" 2>/dev/null; then
-        local version
-        version=$(python3 -c "import openai; print(openai.__version__)" 2>/dev/null)
-        log_success "OpenAI SDK already installed: $version"
-    else
-        log_progress "Installing OpenAI Python SDK"
-        if ! pip install openai>=1.0.0 -q; then
-            log_error "Failed to install OpenAI SDK"
-            deactivate 2>/dev/null || true
-            return 1
-        fi
-        log_success "OpenAI SDK installed"
-    fi
-
-    deactivate 2>/dev/null || true
 
     log_info "OpenAI API key configuration required"
     log_info "Set OPENAI_API_KEY environment variable or run 'openai auth login'"
@@ -107,44 +71,19 @@ validate() {
 
     local all_valid=true
 
-    # Check OpenAI CLI (optional)
+    # Check OpenAI CLI
     if validate_command "openai"; then
         if openai --version &>/dev/null 2>&1; then
             local version
             version=$(openai --version 2>&1 | head -n1)
             log_success "OpenAI CLI installed: $version"
         else
-            log_warn "OpenAI CLI found but version check failed (non-critical)"
+            log_warn "OpenAI CLI found but version check failed"
         fi
     else
-        log_warn "OpenAI CLI not found (optional - SDK is primary requirement)"
-    fi
-
-    # Check OpenAI SDK (required)
-    # shellcheck source=/dev/null
-    source "$VENV_DIR/bin/activate" 2>/dev/null || {
-        log_error "Failed to activate virtual environment"
-        all_valid=false
-        return 1
-    }
-
-    if python3 -c "import openai" 2>/dev/null; then
-        local sdk_version
-        sdk_version=$(python3 -c "import openai; print(openai.__version__)" 2>/dev/null)
-        log_success "OpenAI SDK installed: $sdk_version"
-
-        # Check version meets minimum requirement
-        if python3 -c "import openai; from packaging import version; assert version.parse(openai.__version__) >= version.parse('1.0.0')" 2>/dev/null; then
-            log_success "OpenAI SDK version >= 1.0.0"
-        else
-            log_warn "OpenAI SDK version may be outdated"
-        fi
-    else
-        log_error "OpenAI SDK not installed"
+        log_error "OpenAI CLI not found"
         all_valid=false
     fi
-
-    deactivate 2>/dev/null || true
 
     # Check config directory
     if [[ -d "$CONFIG_DIR" ]]; then
@@ -154,10 +93,10 @@ validate() {
     fi
 
     if [[ "$all_valid" == "true" ]]; then
-        log_success "OpenAI installation validation passed"
+        log_success "OpenAI CLI validation passed"
         return 0
     else
-        log_error "OpenAI installation validation failed"
+        log_error "OpenAI CLI validation failed"
         return 1
     fi
 }
