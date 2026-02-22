@@ -114,30 +114,25 @@ install() {
   // OpenClaw configuration — upstream schema
   // See https://docs.openclaw.ai/gateway/configuration
 
-  "agent": {
-    "model": "anthropic/claude-sonnet-4-6"
-  },
-
-  "models": {
-    "routing": {
-      "default": "anthropic/claude-sonnet-4-6",
-      "fast": "anthropic/claude-haiku-4-5-20251001",
-      "reasoning": "anthropic/claude-opus-4-6"
-    },
-    "fallback": ["anthropic/claude-opus-4-6", "openai/gpt-4o"]
+  "agents": {
+    "defaults": {
+      "model": {
+        "primary": "anthropic/claude-sonnet-4-6",
+        "fallbacks": ["anthropic/claude-opus-4-6", "openai/gpt-4o"]
+      },
+      "models": {
+        "fast": "anthropic/claude-haiku-4-5-20251001",
+        "reasoning": "anthropic/claude-opus-4-6"
+      },
+      "sandbox": {
+        "mode": "non-main"
+      }
+    }
   },
 
   "gateway": {
     "bind": "loopback",
     "port": 18789
-  },
-
-  "agents": {
-    "defaults": {
-      "sandbox": {
-        "mode": "non-main"
-      }
-    }
   },
 
   "channels": {

@@ -79,8 +79,16 @@ install() {
         return 1
     fi
 
+    # Build shared package first (required by server, web, cli, mcp)
+    log_progress "Building shared package..."
+    if (cd "$INSTALL_DIR" && pnpm --filter shared build) 2>&1 | tee -a /tmp/veritas-kanban-install.log; then
+        log_success "Shared package built"
+    else
+        log_warn "No separate shared package or build not needed"
+    fi
+
     # Build all packages
-    log_progress "Building all packages (server, web, cli, mcp, shared)..."
+    log_progress "Building all packages (server, web, cli, mcp)..."
     if (cd "$INSTALL_DIR" && pnpm build) 2>&1 | tee -a /tmp/veritas-kanban-install.log; then
         log_success "Build completed"
     else
