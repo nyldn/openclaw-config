@@ -20,7 +20,7 @@ OPENCLAW_CONFIG="$HOME/.openclaw/openclaw.json"
 
 # Read channel from config if set
 if [[ -f "$OPENCLAW_CONFIG" ]]; then
-    config_channel=$(sed 's|//.*||' "$OPENCLAW_CONFIG" | jq -r '.update.channel // empty' 2>/dev/null || true)
+    config_channel=$(jq -r '.update.channel // empty' "$OPENCLAW_CONFIG" 2>/dev/null || true)
     if [[ -n "$config_channel" ]]; then
         OPENCLAW_CHANNEL="$config_channel"
     fi
@@ -153,7 +153,7 @@ update_system_packages() {
 
 # Update Python packages
 update_python_packages() {
-    log_info "Updating Python packages..."
+    log_info "Checking Python packages..."
 
     if [[ ! -d "$VENV_DIR" ]]; then
         log_warn "Python virtual environment not found: $VENV_DIR"
@@ -166,7 +166,7 @@ update_python_packages() {
         return 1
     }
 
-    # Update pip first
+    # Update pip itself (safe — tooling only)
     log_info "Updating pip..."
     if pip install --upgrade pip -q 2>&1 | tee -a "$LOG_FILE"; then
         log_success "pip updated"
@@ -174,21 +174,16 @@ update_python_packages() {
         log_warn "Failed to update pip"
     fi
 
-    # Get list of outdated packages
+    # Log outdated packages but do NOT auto-upgrade them.
+    # Blind upgrades risk pulling compromised packages from PyPI.
+    # Users should review and upgrade manually: pip list --outdated
     local outdated
-    outdated=$(pip list --outdated --format=freeze 2>/dev/null | cut -d= -f1 || true)
+    outdated=$(pip list --outdated --format=columns 2>/dev/null || true)
 
     if [[ -n "$outdated" ]]; then
-        log_info "Updating outdated Python packages..."
-
-        while IFS= read -r package; do
-            log_info "Updating $package..."
-            if pip install --upgrade "$package" -q 2>&1 | tee -a "$LOG_FILE"; then
-                log_success "$package updated"
-            else
-                log_warn "Failed to update $package"
-            fi
-        done <<< "$outdated"
+        log_info "Outdated Python packages detected (not auto-upgrading):"
+        echo "$outdated" | tee -a "$LOG_FILE"
+        log_info "To upgrade manually: source $VENV_DIR/bin/activate && pip list --outdated"
     else
         log_info "All Python packages are up-to-date"
     fi
@@ -200,14 +195,14 @@ update_python_packages() {
 
 # Update Node.js packages
 update_nodejs_packages() {
-    log_info "Updating Node.js global packages..."
+    log_info "Checking Node.js global packages..."
 
     if ! command -v npm &>/dev/null; then
         log_warn "npm not found, skipping Node.js updates"
         return 0
     fi
 
-    # Update npm itself
+    # Update npm itself (safe — tooling only)
     log_info "Updating npm..."
     if npm install -g npm@latest 2>&1 | tee -a "$LOG_FILE"; then
         log_success "npm updated"
@@ -215,12 +210,18 @@ update_nodejs_packages() {
         log_warn "Failed to update npm"
     fi
 
-    # Update global packages
-    log_info "Updating global npm packages..."
-    if npm update -g 2>&1 | tee -a "$LOG_FILE"; then
-        log_success "Global npm packages updated"
+    # Log outdated global packages but do NOT auto-upgrade them.
+    # Blind `npm update -g` risks pulling compromised packages from npm.
+    # Specific CLI tools are updated individually in update_cli_tools().
+    local outdated
+    outdated=$(npm outdated -g --depth=0 2>/dev/null || true)
+
+    if [[ -n "$outdated" ]]; then
+        log_info "Outdated global npm packages detected (not auto-upgrading):"
+        echo "$outdated" | tee -a "$LOG_FILE"
+        log_info "To upgrade manually: npm outdated -g && npm update -g"
     else
-        log_warn "Failed to update global npm packages"
+        log_info "All global npm packages are up-to-date"
     fi
 
     return 0

@@ -129,6 +129,48 @@ download_with_verification() {
 }
 
 #
+# Basic safety check for downloaded installer scripts.
+# Scans for patterns that should never appear in legitimate vendor installers.
+# This is a defense-in-depth measure — not a substitute for checksum pinning.
+#
+# Arguments:
+#   $1 - Path to the downloaded script
+#
+# Returns:
+#   0 if no suspicious patterns found, 1 otherwise
+#
+verify_script_safety() {
+    local script_file="$1"
+
+    if [[ ! -f "$script_file" ]]; then
+        log_error "Script file not found: $script_file"
+        return 1
+    fi
+
+    # Patterns that should never appear in legitimate vendor install scripts
+    local -a suspicious_patterns=(
+        'crypto.*miner'
+        'xmrig\|xmr-stak'
+        'base64.*-d.*|.*bash'
+        'nc\s\+-e\s\+/bin'
+        '/dev/tcp/'
+        'curl.*|.*sh\s*$'
+        'wget.*|.*sh\s*$'
+    )
+
+    for pattern in "${suspicious_patterns[@]}"; do
+        if grep -qiE "$pattern" "$script_file" 2>/dev/null; then
+            log_error "Suspicious pattern found in downloaded script: $pattern"
+            log_error "Aborting execution for safety. Review the script manually:"
+            log_error "  $script_file"
+            return 1
+        fi
+    done
+
+    return 0
+}
+
+#
 # Download and execute a script with verification
 #
 # Arguments:
@@ -156,6 +198,12 @@ download_and_execute() {
     # Download with verification
     if ! download_with_verification "$url" "$temp_script" "$expected_sha256" "$gpg_signature_url"; then
         log_error "Failed to download and verify script"
+        return 1
+    fi
+
+    # Run safety check before execution
+    if ! verify_script_safety "$temp_script"; then
+        rm -f "$temp_script"
         return 1
     fi
 

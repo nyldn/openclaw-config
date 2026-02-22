@@ -47,6 +47,9 @@ check_installed() {
 install() {
     log_section "Installing Gemini CLI and SDK"
 
+    # Ensure secure log directory exists
+    mkdir -p "$HOME/.openclaw/logs/install"
+
     # Create config directory
     log_progress "Creating Gemini config directory: $CONFIG_DIR"
     mkdir -p "$CONFIG_DIR"
@@ -57,7 +60,7 @@ install() {
 
     # Install Gemini CLI globally
     log_progress "Installing Gemini CLI via npm..."
-    if npm install -g @google/gemini-cli --silent 2>&1 | tee -a /tmp/gemini-install.log; then
+    if npm install -g @google/gemini-cli --silent 2>&1 | tee -a $HOME/.openclaw/logs/install/gemini-install.log; then
         local cli_version
         cli_version=$(gemini --version 2>/dev/null | head -1 || echo "unknown")
         log_success "Gemini CLI installed: $cli_version"

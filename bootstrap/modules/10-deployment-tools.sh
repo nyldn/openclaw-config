@@ -100,16 +100,45 @@ install() {
     esac
     
     if [[ -n "$arch" && "$os_name" =~ ^(linux|darwin)$ ]]; then
-        local url="https://github.com/supabase/cli/releases/latest/download/supabase_${os_name}_${arch}.tar.gz"
+        # Pin to a specific version for reproducibility and checksum verification.
+        # Update SUPABASE_VERSION and checksums when upgrading.
+        local SUPABASE_VERSION="2.15.1"
+        local url="https://github.com/supabase/cli/releases/download/v${SUPABASE_VERSION}/supabase_${os_name}_${arch}.tar.gz"
+        local checksums_url="https://github.com/supabase/cli/releases/download/v${SUPABASE_VERSION}/supabase_${SUPABASE_VERSION}_checksums.txt"
         local tmp_dir
         tmp_dir=$(mktemp -d)
-        
-        if download_with_verification "$url" "$tmp_dir/supabase.tar.gz" && \
-           tar -xzf "$tmp_dir/supabase.tar.gz" -C "$tmp_dir" 2>/dev/null && \
-           mv "$tmp_dir/supabase" "$install_dir/supabase" 2>/dev/null; then
-            chmod +x "$install_dir/supabase"
-            supabase_installed=true
-            log_success "Supabase CLI installed"
+
+        if download_with_verification "$url" "$tmp_dir/supabase.tar.gz"; then
+            # Verify checksum against published checksums file
+            local verified=false
+            if curl -fsSL -o "$tmp_dir/checksums.txt" "$checksums_url" 2>/dev/null; then
+                local actual_sha256
+                if command -v sha256sum &>/dev/null; then
+                    actual_sha256=$(sha256sum "$tmp_dir/supabase.tar.gz" | awk '{print $1}')
+                else
+                    actual_sha256=$(shasum -a 256 "$tmp_dir/supabase.tar.gz" | awk '{print $1}')
+                fi
+                if grep -q "$actual_sha256" "$tmp_dir/checksums.txt"; then
+                    log_success "Supabase binary checksum verified"
+                    verified=true
+                else
+                    log_error "Supabase binary checksum mismatch — aborting install"
+                    log_error "Got: $actual_sha256"
+                    rm -rf "$tmp_dir"
+                fi
+            else
+                log_warn "Could not fetch Supabase checksums file, skipping verification"
+                verified=true  # Allow install but warn
+            fi
+
+            if [[ "$verified" == "true" ]]; then
+                if tar -xzf "$tmp_dir/supabase.tar.gz" -C "$tmp_dir" 2>/dev/null && \
+                   mv "$tmp_dir/supabase" "$install_dir/supabase" 2>/dev/null; then
+                    chmod +x "$install_dir/supabase"
+                    supabase_installed=true
+                    log_success "Supabase CLI v${SUPABASE_VERSION} installed"
+                fi
+            fi
         fi
         rm -rf "$tmp_dir"
     fi

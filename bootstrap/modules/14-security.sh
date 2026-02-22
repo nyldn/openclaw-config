@@ -72,6 +72,9 @@ check_installed() {
 install() {
     log_section "Installing VM Security Hardening"
 
+    # Ensure secure log directory exists
+    mkdir -p "$HOME/.openclaw/logs/install"
+
     # Create security directory
     mkdir -p "$SECURITY_DIR"
 
@@ -96,7 +99,7 @@ install() {
 
     for package in "${packages[@]}"; do
         log_info "Installing $package..."
-        if sudo DEBIAN_FRONTEND=noninteractive apt-get install -y "$package" -qq 2>&1 | tee -a /tmp/security-install.log; then
+        if sudo DEBIAN_FRONTEND=noninteractive apt-get install -y "$package" -qq 2>&1 | tee -a $HOME/.openclaw/logs/install/security-install.log; then
             log_success "$package installed"
         else
             log_warn "Failed to install $package"
@@ -223,11 +226,11 @@ EOF
 EOF
 
     # Initialize AIDE database
-    if sudo aideinit 2>&1 | tee -a /tmp/aide-init.log; then
+    if sudo aideinit 2>&1 | tee -a $HOME/.openclaw/logs/install/aide-init.log; then
         sudo mv /var/lib/aide/aide.db.new /var/lib/aide/aide.db
         log_success "AIDE database initialized"
     else
-        log_warn "AIDE initialization had issues (check /tmp/aide-init.log)"
+        log_warn "AIDE initialization had issues (check $HOME/.openclaw/logs/install/aide-init.log)"
     fi
 
     # Configure automatic security updates
@@ -313,8 +316,12 @@ EOF
     log_success "Security monitoring script created"
 
     # Set up daily security check cron job
-    (crontab -l 2>/dev/null; echo "0 2 * * * $SECURITY_DIR/security-check.sh > $SECURITY_DIR/security-report-\$(date +\%Y\%m\%d).txt 2>&1") | crontab -
-    log_success "Daily security check scheduled"
+    if ! crontab -l 2>/dev/null | grep -q "security-check.sh"; then
+        (crontab -l 2>/dev/null; echo "0 2 * * * $SECURITY_DIR/security-check.sh > $SECURITY_DIR/security-report-\$(date +\%Y\%m\%d).txt 2>&1") | crontab -
+        log_success "Daily security check scheduled"
+    else
+        log_info "Security check cron job already exists"
+    fi
 
     # Install pre-commit hook for secret scanning
     log_progress "Installing pre-commit hook for secret scanning..."

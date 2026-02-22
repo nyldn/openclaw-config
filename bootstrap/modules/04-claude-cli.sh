@@ -124,6 +124,9 @@ install() {
 
                 if download_with_verification "$CLAUDE_INSTALL_URL" "$claude_installer"; then
                     log_warn "Downloaded installer hash: $(sha256sum "$claude_installer" 2>/dev/null || shasum -a 256 "$claude_installer" | awk '{print $1}')"
+                    if ! verify_script_safety "$claude_installer"; then
+                        return 1
+                    fi
                     if bash "$claude_installer"; then
                         log_success "Claude CLI installed via install script"
                     else
@@ -145,6 +148,9 @@ install() {
 
             if download_with_verification "$CLAUDE_INSTALL_URL" "$claude_installer"; then
                 log_warn "Downloaded installer hash: $(sha256sum "$claude_installer" 2>/dev/null || shasum -a 256 "$claude_installer" | awk '{print $1}')"
+                if ! verify_script_safety "$claude_installer"; then
+                    return 1
+                fi
                 if bash "$claude_installer"; then
                     log_success "Claude CLI installed via install script"
                 else

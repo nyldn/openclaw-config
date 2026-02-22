@@ -38,6 +38,9 @@ check_installed() {
 install() {
     log_section "Installing Ollama"
 
+    # Ensure secure log directory exists
+    mkdir -p "$HOME/.openclaw/logs/install"
+
     if validate_command "ollama"; then
         local version
         version=$(ollama --version 2>/dev/null || echo "unknown")
@@ -48,7 +51,7 @@ install() {
         if [[ "$(uname)" == "Darwin" ]]; then
             # macOS — use Homebrew
             if validate_command "brew"; then
-                if brew install ollama 2>&1 | tee -a /tmp/ollama-install.log; then
+                if brew install ollama 2>&1 | tee -a $HOME/.openclaw/logs/install/ollama-install.log; then
                     log_success "Ollama installed via Homebrew"
                 else
                     log_error "Failed to install Ollama via Homebrew"
@@ -68,7 +71,11 @@ install() {
 
             if download_with_verification "https://ollama.com/install.sh" "$install_script"; then
                 log_warn "Downloaded Ollama installer hash: $(sha256sum "$install_script" 2>/dev/null || shasum -a 256 "$install_script" | awk '{print $1}')"
-                if bash "$install_script" 2>&1 | tee -a /tmp/ollama-install.log; then
+                if ! verify_script_safety "$install_script"; then
+                    log_error "Ollama installer failed safety check"
+                    return 1
+                fi
+                if bash "$install_script" 2>&1 | tee -a $HOME/.openclaw/logs/install/ollama-install.log; then
                     log_success "Ollama installed"
                 else
                     log_error "Failed to install Ollama"
@@ -117,7 +124,7 @@ install() {
 
     # Pull default model
     log_progress "Pulling default model: $DEFAULT_MODEL (this may take a few minutes)..."
-    if ollama pull "$DEFAULT_MODEL" 2>&1 | tee -a /tmp/ollama-install.log; then
+    if ollama pull "$DEFAULT_MODEL" 2>&1 | tee -a $HOME/.openclaw/logs/install/ollama-install.log; then
         log_success "Model pulled: $DEFAULT_MODEL"
     else
         log_warn "Failed to pull $DEFAULT_MODEL"
