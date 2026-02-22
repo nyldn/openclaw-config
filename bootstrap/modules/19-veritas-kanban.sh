@@ -25,6 +25,9 @@ MCP_CONFIG="$HOME/.config/claude/mcp.json"
 check_installed() {
     log_debug "Checking if $MODULE_NAME is installed"
 
+    # Ensure npm global bin is in PATH for this session
+    export PATH="$HOME/.local/npm-global/bin:$HOME/.local/bin:$PATH"
+
     if validate_command "vk" && [[ -d "$INSTALL_DIR" ]]; then
         log_debug "Veritas Kanban is installed"
         return 0
@@ -37,6 +40,9 @@ check_installed() {
 # Install the module
 install() {
     log_section "Installing Veritas Kanban"
+
+    # Ensure npm/pnpm global bin is in PATH for this session
+    export PATH="$HOME/.local/npm-global/bin:$HOME/.local/bin:$PATH"
 
     # Verify pnpm is available (from dev-tools module)
     if ! validate_command "pnpm"; then
@@ -167,6 +173,9 @@ install() {
 # Validate installation
 validate() {
     log_progress "Validating Veritas Kanban installation"
+
+    # Ensure npm global bin is in PATH for this session
+    export PATH="$HOME/.local/npm-global/bin:$HOME/.local/bin:$PATH"
 
     local all_valid=true
 

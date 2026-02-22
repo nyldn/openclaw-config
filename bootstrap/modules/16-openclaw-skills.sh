@@ -138,6 +138,9 @@ SKILLS=(
 check_installed() {
     log_debug "Checking if $MODULE_NAME is installed"
 
+    # Ensure npm global bin is in PATH for this session
+    export PATH="$HOME/.local/npm-global/bin:$HOME/.local/bin:$PATH"
+
     # Verify openclaw CLI is available
     if ! validate_command "openclaw"; then
         log_debug "openclaw not found"
@@ -196,6 +199,9 @@ install_skill() {
 # Install the module
 install() {
     log_section "Installing OpenClaw Skills"
+
+    # Ensure npm global bin is in PATH for this session
+    export PATH="$HOME/.local/npm-global/bin:$HOME/.local/bin:$PATH"
 
     # Load skill registry (allowlist/blocklist)
     load_registry
@@ -265,6 +271,9 @@ install() {
 # Validate installation
 validate() {
     log_progress "Validating OpenClaw skills installation"
+
+    # Ensure npm global bin is in PATH for this session
+    export PATH="$HOME/.local/npm-global/bin:$HOME/.local/bin:$PATH"
 
     local all_valid=true
 
