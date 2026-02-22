@@ -68,6 +68,21 @@ install() {
 
             if download_with_verification "https://tailscale.com/install.sh" "$ts_setup"; then
                 log_warn "Downloaded Tailscale installer hash: $(sha256sum "$ts_setup" 2>/dev/null || shasum -a 256 "$ts_setup" | awk '{print $1}')"
+
+                # Wait for any existing dpkg/apt locks to release
+                local lock_wait=0
+                while sudo fuser /var/lib/dpkg/lock-frontend &>/dev/null 2>&1 || sudo fuser /var/lib/apt/lists/lock &>/dev/null 2>&1; do
+                    if [[ $lock_wait -eq 0 ]]; then
+                        log_info "Waiting for other package managers to finish..."
+                    fi
+                    lock_wait=$((lock_wait + 1))
+                    if [[ $lock_wait -gt 60 ]]; then
+                        log_warn "Timed out waiting for dpkg lock after 60 seconds"
+                        break
+                    fi
+                    sleep 1
+                done
+
                 if sudo bash "$ts_setup" 2>&1 | tee -a /tmp/tailscale-install.log; then
                     log_success "Tailscale installed"
                 else
