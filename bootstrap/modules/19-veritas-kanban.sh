@@ -41,6 +41,9 @@ check_installed() {
 install() {
     log_section "Installing Veritas Kanban"
 
+    # Ensure secure log directory exists
+    mkdir -p "$HOME/.openclaw/logs/install"
+
     # Ensure npm/pnpm global bin is in PATH for this session
     export PATH="$HOME/.local/npm-global/bin:$HOME/.local/bin:$PATH"
 
@@ -54,7 +57,7 @@ install() {
     # Clone repository
     if [[ -d "$INSTALL_DIR" ]]; then
         log_info "Veritas Kanban directory already exists, pulling latest..."
-        if git -C "$INSTALL_DIR" pull 2>&1 | tee -a /tmp/veritas-kanban-install.log; then
+        if git -C "$INSTALL_DIR" pull 2>&1 | tee -a $HOME/.openclaw/logs/install/veritas-kanban-install.log; then
             log_success "Repository updated"
         else
             log_error "Failed to update repository"
@@ -62,7 +65,7 @@ install() {
         fi
     else
         log_progress "Cloning Veritas Kanban repository..."
-        if git clone "$REPO_URL" "$INSTALL_DIR" 2>&1 | tee -a /tmp/veritas-kanban-install.log; then
+        if git clone "$REPO_URL" "$INSTALL_DIR" 2>&1 | tee -a $HOME/.openclaw/logs/install/veritas-kanban-install.log; then
             log_success "Repository cloned to $INSTALL_DIR"
         else
             log_error "Failed to clone repository"
@@ -72,7 +75,7 @@ install() {
 
     # Install dependencies
     log_progress "Installing dependencies with pnpm..."
-    if (cd "$INSTALL_DIR" && pnpm install --frozen-lockfile) 2>&1 | tee -a /tmp/veritas-kanban-install.log; then
+    if (cd "$INSTALL_DIR" && pnpm install --frozen-lockfile) 2>&1 | tee -a $HOME/.openclaw/logs/install/veritas-kanban-install.log; then
         log_success "Dependencies installed"
     else
         log_error "Failed to install dependencies"
@@ -81,7 +84,7 @@ install() {
 
     # Build shared package first (required by server, web, cli, mcp)
     log_progress "Building shared package..."
-    if (cd "$INSTALL_DIR" && pnpm --filter shared build) 2>&1 | tee -a /tmp/veritas-kanban-install.log; then
+    if (cd "$INSTALL_DIR" && pnpm --filter shared build) 2>&1 | tee -a $HOME/.openclaw/logs/install/veritas-kanban-install.log; then
         log_success "Shared package built"
     else
         log_warn "No separate shared package or build not needed"
@@ -89,7 +92,7 @@ install() {
 
     # Build all packages
     log_progress "Building all packages (server, web, cli, mcp)..."
-    if (cd "$INSTALL_DIR" && pnpm build) 2>&1 | tee -a /tmp/veritas-kanban-install.log; then
+    if (cd "$INSTALL_DIR" && pnpm build) 2>&1 | tee -a $HOME/.openclaw/logs/install/veritas-kanban-install.log; then
         log_success "Build completed"
     else
         log_error "Failed to build packages"
@@ -98,7 +101,7 @@ install() {
 
     # Install CLI globally via npm link
     log_progress "Linking vk CLI globally..."
-    if (cd "$INSTALL_DIR/cli" && npm link) 2>&1 | tee -a /tmp/veritas-kanban-install.log; then
+    if (cd "$INSTALL_DIR/cli" && npm link) 2>&1 | tee -a $HOME/.openclaw/logs/install/veritas-kanban-install.log; then
         log_success "vk CLI linked globally"
     else
         log_error "Failed to link vk CLI"

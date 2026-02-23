@@ -79,6 +79,12 @@ install() {
     log_warn "Downloaded script hash: $(sha256sum "$nodejs_setup_script" 2>/dev/null || shasum -a 256 "$nodejs_setup_script" | awk '{print $1}')"
     log_warn "Executing NodeSource setup script (checksum pinning not available for frequently-updated scripts)"
 
+    # Safety check before execution with sudo
+    if ! verify_script_safety "$nodejs_setup_script"; then
+        rm -f "$nodejs_setup_script"
+        return 1
+    fi
+
     # Execute with sudo
     if ! sudo -E bash "$nodejs_setup_script"; then
         log_error "Failed to add NodeSource repository"

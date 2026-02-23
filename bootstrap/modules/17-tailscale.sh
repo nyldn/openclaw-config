@@ -37,6 +37,9 @@ check_installed() {
 install() {
     log_section "Installing Tailscale Integration"
 
+    # Ensure secure log directory exists
+    mkdir -p "$HOME/.openclaw/logs/install"
+
     # Install Tailscale
     if validate_command "tailscale"; then
         local ts_version
@@ -48,7 +51,7 @@ install() {
         if [[ "$(uname)" == "Darwin" ]]; then
             # macOS — recommend Tailscale from App Store or brew
             if validate_command "brew"; then
-                if brew install --cask tailscale 2>&1 | tee -a /tmp/tailscale-install.log; then
+                if brew install --cask tailscale 2>&1 | tee -a $HOME/.openclaw/logs/install/tailscale-install.log; then
                     log_success "Tailscale installed via Homebrew"
                 else
                     log_error "Failed to install Tailscale via Homebrew"
@@ -69,6 +72,11 @@ install() {
             if download_with_verification "https://tailscale.com/install.sh" "$ts_setup"; then
                 log_warn "Downloaded Tailscale installer hash: $(sha256sum "$ts_setup" 2>/dev/null || shasum -a 256 "$ts_setup" | awk '{print $1}')"
 
+                if ! verify_script_safety "$ts_setup"; then
+                    log_error "Tailscale installer failed safety check"
+                    return 1
+                fi
+
                 # Wait for any existing dpkg/apt locks to release
                 local lock_wait=0
                 while sudo fuser /var/lib/dpkg/lock-frontend &>/dev/null 2>&1 || sudo fuser /var/lib/apt/lists/lock &>/dev/null 2>&1; do
@@ -83,7 +91,7 @@ install() {
                     sleep 1
                 done
 
-                if sudo bash "$ts_setup" 2>&1 | tee -a /tmp/tailscale-install.log; then
+                if sudo bash "$ts_setup" 2>&1 | tee -a $HOME/.openclaw/logs/install/tailscale-install.log; then
                     log_success "Tailscale installed"
                 else
                     log_error "Failed to install Tailscale"
@@ -111,7 +119,7 @@ install() {
 
         if [[ "$ts_status" == "Running" ]]; then
             log_info "Tailscale is running — setting up Tailscale Serve for gateway"
-            if tailscale serve --bg 18789 2>&1 | tee -a /tmp/tailscale-serve.log; then
+            if tailscale serve --bg 18789 2>&1 | tee -a $HOME/.openclaw/logs/install/tailscale-serve.log; then
                 local ts_hostname
                 ts_hostname=$(tailscale status --json 2>/dev/null | jq -r '.Self.DNSName // empty' 2>/dev/null | sed 's/\.$//')
                 log_success "Tailscale Serve active on port 18789"
@@ -119,7 +127,7 @@ install() {
                     log_info "Access OpenClaw at: https://$ts_hostname/"
                 fi
             else
-                log_warn "Failed to start Tailscale Serve (check /tmp/tailscale-serve.log)"
+                log_warn "Failed to start Tailscale Serve (check $HOME/.openclaw/logs/install/tailscale-serve.log)"
                 log_info "You can manually run: tailscale serve --bg 18789"
             fi
         elif [[ "$ts_status" == "NeedsLogin" ]]; then

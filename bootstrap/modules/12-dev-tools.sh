@@ -56,6 +56,9 @@ check_installed() {
 install() {
     log_section "Installing Development Tools"
 
+    # Ensure secure log directory exists
+    mkdir -p "$HOME/.openclaw/logs/install"
+
     # Ensure npm global bin is in PATH for this session
     export PATH="$HOME/.local/npm-global/bin:$HOME/.local/bin:$PATH"
 
@@ -102,14 +105,16 @@ install() {
 
         if download_with_verification "https://cli.doppler.com/install.sh" "$doppler_script"; then
             log_warn "Downloaded Doppler installer hash: $(sha256sum "$doppler_script" 2>/dev/null || shasum -a 256 "$doppler_script" | awk '{print $1}')"
-            if [[ "${EUID:-$(id -u)}" -eq 0 ]]; then
-                if sh "$doppler_script" 2>&1 | tee -a /tmp/doppler-install.log; then
+            if ! verify_script_safety "$doppler_script"; then
+                log_warn "Doppler installer failed safety check (optional tool)"
+            elif [[ "${EUID:-$(id -u)}" -eq 0 ]]; then
+                if sh "$doppler_script" 2>&1 | tee -a $HOME/.openclaw/logs/install/doppler-install.log; then
                     log_success "Doppler CLI installed"
                 else
                     log_warn "Failed to install Doppler CLI (optional tool)"
                 fi
             elif command -v sudo &>/dev/null; then
-                if sudo sh "$doppler_script" 2>&1 | tee -a /tmp/doppler-install.log; then
+                if sudo sh "$doppler_script" 2>&1 | tee -a $HOME/.openclaw/logs/install/doppler-install.log; then
                     log_success "Doppler CLI installed"
                 else
                     log_warn "Failed to install Doppler CLI (optional tool)"
@@ -128,7 +133,7 @@ install() {
         log_info "Installing Doppler CLI for macOS..."
 
         if command -v brew &>/dev/null; then
-            if brew install dopplerhq/cli/doppler 2>&1 | tee -a /tmp/doppler-install.log; then
+            if brew install dopplerhq/cli/doppler 2>&1 | tee -a $HOME/.openclaw/logs/install/doppler-install.log; then
                 log_success "Doppler CLI installed via Homebrew"
             else
                 log_warn "Failed to install Doppler CLI via Homebrew"

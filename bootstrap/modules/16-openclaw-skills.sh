@@ -186,7 +186,7 @@ install_skill() {
 
     log_progress "Installing skill: $skill"
 
-    if clawhub install "$skill" 2>&1 | tee -a /tmp/openclaw-skill-install.log; then
+    if clawhub install "$skill" 2>&1 | tee -a $HOME/.openclaw/logs/install/openclaw-skill-install.log; then
         log_success "Skill installed: $skill"
         verify_skill_hash "$skill"
         return 0
@@ -199,6 +199,9 @@ install_skill() {
 # Install the module
 install() {
     log_section "Installing OpenClaw Skills"
+
+    # Ensure secure log directory exists
+    mkdir -p "$HOME/.openclaw/logs/install"
 
     # Ensure npm global bin is in PATH for this session
     export PATH="$HOME/.local/npm-global/bin:$HOME/.local/bin:$PATH"
@@ -216,7 +219,7 @@ install() {
     # Install clawhub CLI if not present
     if ! validate_command "clawhub"; then
         log_progress "Installing clawhub CLI..."
-        if npm install -g clawhub --silent 2>&1 | tee -a /tmp/openclaw-skill-install.log; then
+        if npm install -g clawhub --silent 2>&1 | tee -a $HOME/.openclaw/logs/install/openclaw-skill-install.log; then
             log_success "clawhub CLI installed"
         else
             log_error "Failed to install clawhub CLI"
@@ -236,7 +239,7 @@ install() {
     local failed_skills=()
 
     # Clear previous log
-    > /tmp/openclaw-skill-install.log
+    > $HOME/.openclaw/logs/install/openclaw-skill-install.log
 
     for skill in "${SKILLS[@]}"; do
         if install_skill "$skill"; then
@@ -255,7 +258,7 @@ install() {
         for skill in "${failed_skills[@]}"; do
             log_warn "  - $skill"
         done
-        log_info "Check log: /tmp/openclaw-skill-install.log"
+        log_info "Check log: $HOME/.openclaw/logs/install/openclaw-skill-install.log"
     fi
 
     log_info ""

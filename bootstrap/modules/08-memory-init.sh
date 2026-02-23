@@ -54,6 +54,7 @@ install() {
 
         if [[ -f "$TEMPLATE_DIR/.env.template" ]]; then
             cp "$TEMPLATE_DIR/.env.template" "$WORKSPACE_DIR/.env"
+            chmod 0600 "$WORKSPACE_DIR/.env"
             log_success ".env file created"
             log_info "Please edit $WORKSPACE_DIR/.env and add your API keys"
         else
@@ -69,6 +70,7 @@ MEMORY_DIR=memory
 LOGS_DIR=memory/logs
 EMBEDDING_MODEL=text-embedding-ada-002
 EOF
+            chmod 0600 "$WORKSPACE_DIR/.env"
             log_success "Basic .env file created"
         fi
     else

@@ -45,6 +45,9 @@ check_installed() {
 install() {
     log_section "Installing OpenClaw"
 
+    # Ensure secure log directory exists
+    mkdir -p "$HOME/.openclaw/logs/install"
+
     # Verify npm is available
     if ! validate_command "npm"; then
         log_error "npm is required but not found"
@@ -72,13 +75,13 @@ install() {
     # Install OpenClaw globally
     # Set SHARP_IGNORE_GLOBAL_LIBVIPS to prevent sharp dependency failures on some systems
     log_progress "Installing OpenClaw via npm..."
-    if SHARP_IGNORE_GLOBAL_LIBVIPS=1 npm install -g openclaw --silent 2>&1 | tee /tmp/openclaw-install.log; then
+    if SHARP_IGNORE_GLOBAL_LIBVIPS=1 npm install -g openclaw --silent 2>&1 | tee $HOME/.openclaw/logs/install/openclaw-install.log; then
         local openclaw_version
         openclaw_version=$(openclaw --version 2>/dev/null || echo "unknown")
         log_success "OpenClaw installed: $openclaw_version"
     else
         log_error "Failed to install OpenClaw"
-        log_info "Check /tmp/openclaw-install.log for details"
+        log_info "Check $HOME/.openclaw/logs/install/openclaw-install.log for details"
         return 1
     fi
 
@@ -93,10 +96,10 @@ install() {
         # Interactive terminal — run the full onboard wizard with daemon install
         log_info "Starting interactive onboard wizard..."
         log_info "This will configure the gateway, daemon, and channel pairing."
-        if openclaw onboard --install-daemon 2>&1 | tee -a /tmp/openclaw-onboard.log; then
+        if openclaw onboard --install-daemon 2>&1 | tee -a $HOME/.openclaw/logs/install/openclaw-onboard.log; then
             log_success "OpenClaw onboard completed"
         else
-            log_warn "Onboard wizard exited with errors (check /tmp/openclaw-onboard.log)"
+            log_warn "Onboard wizard exited with errors (check $HOME/.openclaw/logs/install/openclaw-onboard.log)"
             log_info "Falling back to manual configuration..."
         fi
     else
@@ -210,7 +213,7 @@ EOF
     local tools_script="$(dirname "$SCRIPT_DIR")/scripts/generate-openclaw-tools-doc.sh"
 
     if [[ -x "$tools_script" ]]; then
-        if bash "$tools_script" 2>&1 | tee /tmp/openclaw-tools-gen.log; then
+        if bash "$tools_script" 2>&1 | tee $HOME/.openclaw/logs/install/openclaw-tools-gen.log; then
             log_success "TOOLS.md generated successfully"
             log_info "OpenClaw will read ~/.openclaw/workspace/TOOLS.md to understand available tools"
         else
@@ -452,10 +455,10 @@ validate() {
     # Run openclaw doctor for upstream diagnostics
     if validate_command "openclaw"; then
         log_progress "Running openclaw doctor..."
-        if openclaw doctor 2>&1 | tee /tmp/openclaw-doctor.log; then
+        if openclaw doctor 2>&1 | tee $HOME/.openclaw/logs/install/openclaw-doctor.log; then
             log_success "openclaw doctor passed"
         else
-            log_warn "openclaw doctor reported issues (see /tmp/openclaw-doctor.log)"
+            log_warn "openclaw doctor reported issues (see $HOME/.openclaw/logs/install/openclaw-doctor.log)"
         fi
     fi
 
